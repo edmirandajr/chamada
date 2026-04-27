@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamada Digital — QR Code</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #eeeee9;
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #9b9b96;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 10px;
+    --radius-lg: 14px;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --green-dark: #27500A;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --red-dark: #791F1F;
+    --amber: #BA7517;
+    --amber-bg: #FAEEDA;
+    --amber-dark: #854F0B;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg2: #2a2a28;
+      --bg3: #333330;
+      --text: #f0f0ec;
+      --text2: #9b9b96;
+      --text3: #6b6b66;
+      --border: rgba(255,255,255,0.12);
+      --border2: rgba(255,255,255,0.22);
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  #app { width: 100%; max-width: 700px; }
+  .view { display: none; }
+  .view.on { display: flex; }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg2); }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: var(--green); color: var(--green-bg); border-color: var(--green-dark); }
+  .btn.primary:hover { background: var(--green-dark); color: var(--green-bg); }
+  .btn.danger { background: var(--red); color: var(--red-bg); border-color: var(--red-dark); }
+  .btn.danger:hover { background: var(--red-dark); color: var(--red-bg); }
+  .btn.full { width: 100%; }
+
+  .inp {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 12px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+    outline: none;
+  }
+  .inp:focus { border-color: var(--text2); }
+  select.inp { cursor: pointer; }
+
+  label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+  .fg { margin-bottom: 14px; }
+  .err { font-size: 12px; color: #c0392b; min-height: 18px; margin-bottom: 8px; }
+  .hint { font-size: 11px; color: var(--text3); }
+
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; }
+  .badge-green { background: var(--green-bg);  color: var(--green-dark); }
+  .badge-gray  { background: var(--bg2);        color: var(--text2); }
+  .badge-amber { background: var(--amber-bg);   color: var(--amber-dark); }
+
+  /* VIEWS */
+  #vlogin    { flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+  #vlogin .card { width: 100%; max-width: 340px; }
+  #vdash     { flex-direction: column; gap: 1rem; }
+  #vproj     { flex-direction: column; min-height: 500px; background: var(--bg);
+                border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; }
+  .proj-inner { display: flex; flex: 1; }
+  .proj-side  { width: 220px; min-width: 220px; border-right: 0.5px solid var(--border);
+                padding: 1rem; display: flex; flex-direction: column; gap: 10px; }
+  .proj-main  { flex: 1; display: flex; flex-direction: column; align-items: center;
+                justify-content: center; padding: 2rem; gap: 1.5rem; }
+  #vstudent  { flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+  #vstudent .card { width: 100%; max-width: 380px; }
+  #vsuccess  { flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+  #vsuccess .card { width: 100%; max-width: 340px; text-align: center; }
+  #vsettings { flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+  #vsettings .card { width: 100%; max-width: 380px; }
+
+  .att-row { font-size: 11px; padding: 4px 7px; background: var(--bg2); border-radius: 5px; }
+
+  .exp-bar-wrap { width: 100%; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
+  .exp-bar      { height: 4px; border-radius: 2px; transition: width 1s linear, background 1s; }
+
+  .exp-warn {
+    font-size: 12px; font-weight: 500; padding: 6px 12px;
+    border-radius: var(--radius); text-align: center;
+    background: var(--amber-bg); color: var(--amber-dark);
+    display: none;
+  }
+  .exp-warn.on { display: block; }
+
+  @media (max-width: 500px) {
+    .proj-side { width: 160px; min-width: 160px; }
+    #tok { font-size: 32px !important; letter-spacing: 6px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="vlogin" class="view">
+    <div class="card">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:36px;margin-bottom:8px">📋</div>
+        <div style="font-size:18px;font-weight:500">Chamada Digital</div>
+        <div style="font-size:12px;color:var(--text2)">Painel do professor</div>
+      </div>
+      <div class="fg">
+        <label>Senha</label>
+        <input id="pwd" class="inp" type="password" placeholder="Senha do professor"
+          onkeydown="if(event.key==='Enter')A.login()">
+      </div>
+      <div class="err" id="lerr"></div>
+      <button class="btn primary full" onclick="A.login()">Entrar</button>
+      <p class="hint" style="text-align:center;margin-top:10px">Senha padrão: <code>chamada</code> — altere nas configurações</p>
+      <hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0">
+      <button class="btn full" onclick="A.show('student')">Sou aluno — registrar presença</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="vdash" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">📋</span>
+        <span style="font-size:16px;font-weight:500">Chamada Digital</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="A.showSettings()">Configurações</button>
+        <button class="btn" onclick="A.logout()">Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:14px;font-weight:500;margin-bottom:14px">Nova sessão de presença</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="fg" style="margin:0">
+          <label>Disciplina</label>
+          <input id="course" class="inp" placeholder="Ex: Gramática e Redação">
+        </div>
+        <div class="fg" style="margin:0">
+          <label>Turma</label>
+          <input id="group" class="inp" placeholder="Ex: Publicidade 2025.1">
+        </div>
+      </div>
+      <div class="fg" style="margin:0">
+        <label>Expiração automática da sessão</label>
+        <select id="dur" class="inp">
+          <option value="60">1 hora</option>
+          <option value="90">1h30</option>
+          <option value="120" selected>2 horas (padrão)</option>
+          <option value="180">3 horas</option>
+          <option value="240">4 horas</option>
+        </select>
+      </div>
+      <div class="err" id="serr" style="margin-top:8px"></div>
+      <button class="btn primary" style="margin-top:10px" onclick="A.createSession()">
+        Iniciar sessão e exibir QR code
+      </button>
+    </div>
+
+    <div class="card" style="flex:1">
+      <div style="font-size:14px;font-weight:500;margin-bottom:14px">Sessões anteriores</div>
+      <div id="slist"><span class="hint">Nenhuma sessão ainda.</span></div>
+    </div>
+  </div>
+
+  <!-- PROJEÇÃO -->
+  <div id="vproj" class="view">
+    <div class="proj-inner">
+
+      <div class="proj-side">
+        <div>
+          <div style="font-size:13px;font-weight:500" id="pcourse">—</div>
+          <div style="font-size:11px;color:var(--text2)" id="pgroup">—</div>
+        </div>
+
+        <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;text-align:center">
+          <div style="font-size:30px;font-weight:500" id="acnt">0</div>
+          <div style="font-size:11px;color:var(--text2)">presença(s)</div>
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:11px;color:var(--text2)">Sessão expira em</span>
+            <span style="font-size:11px;font-weight:500" id="sexp">—</span>
+          </div>
+          <div class="exp-bar-wrap">
+            <div class="exp-bar" id="expbar" style="width:100%;background:var(--green)"></div>
+          </div>
+        </div>
+
+        <div id="expwarn" class="exp-warn">Encerrando em breve</div>
+
+        <div style="font-size:12px;font-weight:500;color:var(--text2)">Presentes</div>
+        <div id="alist" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;max-height:220px"></div>
+
+        <div style="display:flex;flex-direction:column;gap:7px;border-top:0.5px solid var(--border);padding-top:10px">
+          <button class="btn full" onclick="A.exportCSV()">Exportar CSV</button>
+          <button class="btn full" onclick="A.show('dash')">← Dashboard</button>
+          <button class="btn danger full" onclick="A.endSession()">Encerrar sessão</button>
+        </div>
+      </div>
+
+      <div class="proj-main">
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:500" id="ptitle">—</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Escaneie o QR code ou use o código abaixo</div>
+        </div>
+
+        <div id="qrwrap" style="padding:14px;border:0.5px solid var(--border);
+             border-radius:var(--radius-lg);background:#ffffff">
+          <div id="qrcode"></div>
+        </div>
+
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Código de acesso — atualiza em</div>
+          <div id="tok" style="font-family:monospace;font-size:48px;font-weight:600;
+               letter-spacing:12px;line-height:1;color:var(--text)">——</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:8px">
+            ⏱ <span id="cdwn" style="font-weight:500">—:—</span>
+          </div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text3);word-break:break-all;
+             text-align:center;max-width:420px" id="purl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALUNO -->
+  <div id="vstudent" class="view">
+    <div class="card">
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <div style="font-size:32px;margin-bottom:8px">✅</div>
+        <div style="font-size:17px;font-weight:500">Registrar presença</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Informe o código exibido pelo professor</div>
+      </div>
+      <div class="fg">
+        <label>Código do professor (6 caracteres)</label>
+        <input id="cin" class="inp" placeholder="Ex: A3B7F2" maxlength="6"
+          style="font-family:monospace;font-size:24px;text-align:center;letter-spacing:8px;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <div class="fg">
+        <label>Matrícula</label>
+        <input id="mat" class="inp" placeholder="Número de matrícula" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="fg">
+        <label>Nome completo</label>
+        <input id="nom" class="inp" placeholder="Seu nome completo" autocomplete="name">
+      </div>
+      <div class="err" id="aerr"></div>
+      <button class="btn primary full" onclick="A.markAttendance()">Confirmar presença</button>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn" style="font-size:12px" onclick="A.show('login')">Área do professor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCESSO -->
+  <div id="vsuccess" class="view">
+    <div class="card">
+      <div style="width:56px;height:56px;background:var(--green-bg);border-radius:50%;
+           display:flex;align-items:center;justify-content:center;
+           margin:0 auto 1rem;font-size:24px;color:var(--green-dark)">✓</div>
+      <div style="font-size:18px;font-weight:500;color:var(--green-dark)">Presença confirmada!</div>
+      <p style="font-size:13px;color:var(--text2);margin-top:10px" id="smsg">—</p>
+      <p class="hint" style="margin-top:4px" id="stime">—</p>
+      <div style="margin-top:14px;padding:10px 12px;background:var(--bg2);
+           border-radius:var(--radius);font-size:11px;color:var(--text2)">
+        ID do dispositivo: <code id="sdevid" style="font-size:10px;word-break:break-all">—</code>
+      </div>
+      <button class="btn" style="margin-top:1.25rem;width:100%" onclick="A.show('student')">Nova consulta</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div id="vsettings" class="view">
+    <div class="card">
+      <div style="font-size:16px;font-weight:500;margin-bottom:1.25rem">Configurações</div>
+
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Senha do professor</div>
+      <div class="fg">
+        <label>Nova senha</label>
+        <input id="npwd" class="inp" type="password" placeholder="Nova senha">
+      </div>
+      <div class="fg">
+        <label>Confirmar nova senha</label>
+        <input id="npwd2" class="inp" type="password" placeholder="Repita a senha">
+      </div>
+      <div class="err" id="seterr"></div>
+
+      <hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Impressão digital deste dispositivo</div>
+      <div style="font-family:monospace;font-size:11px;padding:9px 11px;
+           background:var(--bg2);border-radius:var(--radius);word-break:break-all;
+           color:var(--text2)" id="mydevid">calculando...</div>
+      <p class="hint" style="margin-top:6px;line-height:1.5">
+        Cada aparelho gera um ID único baseado em características do hardware e do navegador.
+        Dois registros com o mesmo ID na mesma sessão são bloqueados — mesmo que usem matrículas diferentes.
+      </p>
+
+      <div style="display:flex;gap:8px;margin-top:1.5rem">
+        <button class="btn" onclick="A.show('dash')">Cancelar</button>
+        <button class="btn primary" onclick="A.changePassword()">Salvar senha</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   CHAMADA DIGITAL v2.0
+   — Expiração automática de sessão
+   — Impressão digital do dispositivo (bloqueio de registro duplo)
+   ================================================================ */
+
+const TOKEN_WIN  = 120000;   // 2 minutos por token
+const GRACE_WINS = 1;        // janela de graça na troca
+const WARN_MIN   = 10;       // avisar nos últimos N minutos
+const STOR_SESS  = 'cd_sessions';
+const STOR_PWD   = 'cd_password';
+const STOR_DEVID = 'cd_devid';
+
+/* ---- Hash FNV-32a ---- */
+function fnv32(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+  return h;
+}
+
+/* ---- Tokens rotativos ---- */
+function makeToken(sid, secret, win) {
+  return ('00000' + fnv32(sid + ':' + secret + ':' + win).toString(36)).slice(-6).toUpperCase();
+}
+function getWin()           { return Math.floor(Date.now() / TOKEN_WIN); }
+function curToken(sid, sec) { return makeToken(sid, sec, getWin()); }
+function validToken(tok, sid, sec) {
+  const w = getWin();
+  for (let i = 0; i <= GRACE_WINS; i++) if (makeToken(sid, sec, w - i) === tok) return true;
+  return false;
+}
+
+/* ---- Utilitários ---- */
+function uid()        { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4); }
+function rndSecret()  { return Array.from({ length: 18 }, () => (Math.random() * 36 | 0).toString(36)).join(''); }
+function fmt(ts)      { return new Date(ts).toLocaleString('pt-BR'); }
+function fmtCd(ms)    { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + (s % 60 + '').padStart(2, '0'); }
+function fmtRem(ms) {
+  if (ms <= 0) return '0:00';
+  const s = Math.ceil(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sc = s % 60;
+  return h > 0 ? h + 'h ' + m + 'min' : m + ':' + (sc + '').padStart(2, '0');
+}
+
+/* ---- localStorage ---- */
+function storGet(k)    { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
+function storSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(_) {} }
+
+/* ================================================================
+   IMPRESSÃO DIGITAL DO DISPOSITIVO
+   Combina canvas fingerprint + sinais do navegador/hardware.
+   O ID é gerado uma vez e persistido no localStorage.
+   ================================================================ */
+function buildFingerprint() {
+  const parts = [];
+
+  /* Canvas fingerprint — depende das fontes e da GPU */
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = 240; cv.height = 50;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#e8a020';
+    ctx.fillRect(0, 0, 240, 50);
+    ctx.fillStyle = '#114488';
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillText('ChamadaDigital \u2014 UNI7 \uD83C\uDF93', 4, 32);
+    ctx.fillStyle = 'rgba(90,200,60,0.75)';
+    ctx.font = '11px "Times New Roman", serif';
+    ctx.fillText('presenca2025-\u03B1\u03B2\u03B3', 6, 14);
+    parts.push(cv.toDataURL());
+  } catch (_) { parts.push('no-canvas'); }
+
+  /* Sinais do navegador */
+  parts.push(navigator.userAgent || '');
+  parts.push(navigator.language || '');
+  parts.push(navigator.languages ? navigator.languages.join(',') : '');
+  parts.push(String(navigator.hardwareConcurrency || 0));
+  parts.push(String(navigator.deviceMemory || 0));
+
+  /* Tela */
+  parts.push([screen.width, screen.height, screen.colorDepth, screen.pixelDepth].join('x'));
+  parts.push(String(window.devicePixelRatio || 1));
+  parts.push([screen.availWidth, screen.availHeight].join('x'));
+
+  /* Fuso horário */
+  parts.push(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+
+  /* Plugins (desktops) */
+  try { parts.push(Array.from(navigator.plugins || []).map(p => p.name + p.filename).sort().join('|')); }
+  catch (_) { parts.push(''); }
+
+  /* WebGL renderer — varia por GPU */
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    if (gl) {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if (ext) {
+        parts.push(gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) + '|' + gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));
+      }
+    }
+  } catch (_) {}
+
+  /* Dois passes de hash para mais bits de entropia */
+  const raw = parts.join('\x00');
+  const h1  = fnv32(raw);
+  const h2  = fnv32(raw.split('').reverse().join('') + raw.length);
+  return (h1.toString(16).padStart(8, '0') + '-' + h2.toString(16).padStart(8, '0')).toUpperCase();
+}
+
+function getDeviceId() {
+  let id = storGet(STOR_DEVID);
+  if (!id) { id = buildFingerprint(); storSet(STOR_DEVID, id); }
+  return id;
+}
+
+/* ================================================================
+   APP
+   ================================================================ */
+const A = {
+  auth: false,
+  sessions: {},
+  activeId: null,
+  _timer: null,
+  _lastToken: '',
+  _devId: null,
+
+  init() {
+    this._devId = getDeviceId();
+    this._expireOld();
+    const p = new URLSearchParams(location.hash.slice(1));
+    const s = p.get('s'), t = p.get('t');
+    if (s && t) { document.getElementById('cin').value = t; this.show('student'); }
+    else          this.show('login');
+  },
+
+  /* ---- Expiração automática ---- */
+  _expireOld() {
+    const sessions = storGet(STOR_SESS) || {};
+    let changed = false;
+    for (const s of Object.values(sessions)) {
+      if (s.active && s.expiresAt && Date.now() > s.expiresAt) {
+        s.active = false; s.endedAt = s.expiresAt; s.autoExp = true; changed = true;
+      }
+    }
+    if (changed) storSet(STOR_SESS, sessions);
+    this.sessions = sessions;
+    return sessions;
+  },
+
+  /* ---- Navegação ---- */
+  show(v) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('on'));
+    document.getElementById('v' + v).classList.add('on');
+    if (v === 'dash')     this.loadDash();
+    if (v === 'settings') document.getElementById('mydevid').textContent = this._devId;
+  },
+
+  /* ---- Login ---- */
+  login() {
+    const pwd    = document.getElementById('pwd').value;
+    const stored = storGet(STOR_PWD) || 'chamada';
+    if (pwd === stored) {
+      this.auth = true;
+      this._expireOld();
+      this.show('dash');
+      document.getElementById('pwd').value = '';
+      document.getElementById('lerr').textContent = '';
+    } else {
+      document.getElementById('lerr').textContent = 'Senha incorreta.';
+    }
+  },
+
+  logout() {
+    this.auth = false;
+    clearInterval(this._timer); this._timer = null;
+    this.show('login');
+  },
+
+  /* ---- Configurações ---- */
+  showSettings() { this.show('settings'); },
+
+  changePassword() {
+    const p1 = document.getElementById('npwd').value;
+    const p2 = document.getElementById('npwd2').value;
+    if (!p1)      { document.getElementById('seterr').textContent = 'Informe a nova senha.'; return; }
+    if (p1 !== p2){ document.getElementById('seterr').textContent = 'As senhas não coincidem.'; return; }
+    storSet(STOR_PWD, p1);
+    document.getElementById('seterr').textContent = '';
+    document.getElementById('npwd').value = document.getElementById('npwd2').value = '';
+    alert('Senha alterada com sucesso!');
+    this.show('dash');
+  },
+
+  /* ---- Dashboard ---- */
+  loadDash() {
+    this._expireOld();
+    const el   = document.getElementById('slist');
+    const list = Object.values(this.sessions).sort((a, b) => b.createdAt - a.createdAt);
+    if (!list.length) { el.innerHTML = '<span class="hint">Nenhuma sessão ainda.</span>'; return; }
+
+    let html = '';
+    for (const s of list) {
+      const att = storGet('cd_att_' + s.id) || [];
+      let badge;
+      if (s.active) {
+        const rem = s.expiresAt - Date.now();
+        badge = rem < WARN_MIN * 60000
+          ? `<span class="badge badge-amber">Expira em ${Math.ceil(rem/60000)}min</span>`
+          : `<span class="badge badge-green">Ativa</span>`;
+      } else {
+        badge = `<span class="badge badge-gray">${s.autoExp ? 'Expirada' : 'Encerrada'}</span>`;
+      }
+      html += `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;
+                    gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:500">${s.course} ${badge}</div>
+            <div style="font-size:11px;color:var(--text2)">
+              ${s.group || '—'} &middot; ${fmt(s.createdAt)} &middot; ${att.length} presença(s)
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            ${s.active ? `<button class="btn" style="font-size:12px" onclick="A.reopenProj('${s.id}')">Projetar</button>` : ''}
+            <button class="btn" style="font-size:12px" onclick="A.viewAtt('${s.id}')">Ver</button>
+            <button class="btn" style="font-size:12px" onclick="A.exportCSV('${s.id}')">CSV</button>
+          </div>
+        </div>`;
+    }
+    el.innerHTML = html;
+  },
+
+  /* ---- Criar sessão ---- */
+  createSession() {
+    const course  = document.getElementById('course').value.trim();
+    const group   = document.getElementById('group').value.trim();
+    const durMin  = parseInt(document.getElementById('dur').value, 10) || 120;
+    if (!course) { document.getElementById('serr').textContent = 'Informe a disciplina.'; return; }
+    document.getElementById('serr').textContent = '';
+
+    const id        = uid();
+    const sec       = rndSecret();
+    const now       = Date.now();
+    const expiresAt = now + durMin * 60000;
+    const sess = { id, course, group, secret: sec, createdAt: now, expiresAt, durMin, active: true };
+    this.sessions[id] = sess;
+    storSet(STOR_SESS, this.sessions);
+    this.activeId = id;
+    this.show('proj');
+    this._startProj();
+  },
+
+  reopenProj(id) {
+    this._expireOld();
+    const s      = this.sessions[id];
+    s.active     = true;
+    s.expiresAt  = Date.now() + (s.durMin || 120) * 60000;
+    s.autoExp    = false;
+    storSet(STOR_SESS, this.sessions);
+    this.activeId = id;
+    this.show('proj');
+    this._startProj();
+  },
+
+  endSession(auto) {
+    if (!this.activeId) return;
+    if (!auto && !confirm('Encerrar a sessão? Os alunos não poderão mais registrar presença.')) return;
+    const s   = this.sessions[this.activeId];
+    s.active  = false;
+    s.endedAt = Date.now();
+    if (auto) s.autoExp = true;
+    storSet(STOR_SESS, this.sessions);
+    clearInterval(this._timer); this._timer = null;
+    this.activeId = null; this._lastToken = '';
+    this.show('dash');
+    if (auto) alert('A sessão expirou automaticamente.\nExporte o CSV antes de sair!');
+  },
+
+  /* ---- Projeção ---- */
+  _startProj() {
+    const sess = this.sessions[this.activeId];
+    document.getElementById('pcourse').textContent = sess.course;
+    document.getElementById('pgroup').textContent  = sess.group || '';
+    document.getElementById('ptitle').textContent  = sess.course + (sess.group ? ' — ' + sess.group : '');
+    clearInterval(this._timer);
+    this._updateProj();
+    this._timer = setInterval(() => this._updateProj(), 1000);
+  },
+
+  _updateProj() {
+    const sess = this.sessions[this.activeId]; if (!sess) return;
+    const now  = Date.now();
+
+    /* Expiração automática */
+    const rem = sess.expiresAt - now;
+    if (rem <= 0) { this.endSession(true); return; }
+
+    /* Barra de expiração */
+    const total = sess.durMin * 60000;
+    const pct   = Math.max(0, (rem / total) * 100);
+    const bar   = document.getElementById('expbar');
+    const warn  = document.getElementById('expwarn');
+    bar.style.width = pct.toFixed(1) + '%';
+    if (rem < WARN_MIN * 60000) {
+      bar.style.background = '#BA7517'; warn.classList.add('on');
+    } else if (rem < 30 * 60000) {
+      bar.style.background = '#EF9F27'; warn.classList.remove('on');
+    } else {
+      bar.style.background = 'var(--green)'; warn.classList.remove('on');
+    }
+    document.getElementById('sexp').textContent = fmtRem(rem);
+
+    /* Token */
+    const tok       = curToken(sess.id, sess.secret);
+    const remaining = TOKEN_WIN - (now % TOKEN_WIN);
+    document.getElementById('cdwn').textContent = fmtCd(remaining);
+
+    if (tok !== this._lastToken) {
+      this._lastToken = tok;
+      document.getElementById('tok').textContent = tok;
+      const base = location.href.split('#')[0];
+      const url  = base + '#s=' + sess.id + '&t=' + tok;
+      document.getElementById('purl').textContent = url;
+      const qc = document.getElementById('qrcode');
+      qc.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qc, { text: url, width: 230, height: 230,
+          colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+      }
+    }
+
+    /* Lista de presentes */
+    const att = storGet('cd_att_' + this.activeId) || [];
+    document.getElementById('acnt').textContent = att.length;
+    document.getElementById('alist').innerHTML  = att.slice().reverse().map(r =>
+      `<div class="att-row"><span style="font-weight:500">${r.matricula}</span> ${r.nome}</div>`
+    ).join('');
+  },
+
+  /* ---- Aluno: marcar presença ---- */
+  markAttendance() {
+    const tok = document.getElementById('cin').value.trim().toUpperCase();
+    const mat = document.getElementById('mat').value.trim();
+    const nom = document.getElementById('nom').value.trim();
+    const err = document.getElementById('aerr');
+    err.textContent = '';
+
+    if (!tok || tok.length < 6) { err.textContent = 'Informe o código de 6 caracteres.'; return; }
+    if (!mat)                    { err.textContent = 'Informe sua matrícula.'; return; }
+    if (!nom)                    { err.textContent = 'Informe seu nome completo.'; return; }
+
+    const devId    = getDeviceId();
+    const sessions = this._expireOld();
+    let found      = null;
+
+    for (const s of Object.values(sessions)) {
+      if (!s.active) continue;
+      if (validToken(tok, s.id, s.secret)) { found = s; break; }
+    }
+
+    if (!found) {
+      err.textContent = 'Código inválido ou expirado. Solicite o código atual ao professor.';
+      return;
+    }
+
+    const att = storGet('cd_att_' + found.id) || [];
+
+    /* Checar matrícula duplicada */
+    if (att.some(r => r.matricula.toLowerCase() === mat.toLowerCase())) {
+      err.textContent = 'Presença já registrada para esta matrícula nesta sessão.';
+      return;
+    }
+
+    /* Checar dispositivo duplicado */
+    if (att.some(r => r.devId === devId)) {
+      err.textContent = 'Este dispositivo já registrou uma presença nesta sessão. Cada aparelho só pode registrar uma presença.';
+      return;
+    }
+
+    att.push({ matricula: mat, nome: nom, ts: Date.now(), devId });
+    storSet('cd_att_' + found.id, att);
+
+    document.getElementById('smsg').textContent   = nom + ' — ' + found.course;
+    document.getElementById('stime').textContent  = fmt(Date.now());
+    document.getElementById('sdevid').textContent = devId;
+    this.show('success');
+  },
+
+  /* ---- Ver lista / Exportar CSV ---- */
+  viewAtt(sid) {
+    const att  = storGet('cd_att_' + sid) || [];
+    const sess = this.sessions[sid];
+    const msg  = att.length
+      ? att.map((r, i) => `${i + 1}. ${r.matricula} — ${r.nome} (${fmt(r.ts)})`).join('\n')
+      : 'Nenhuma presença registrada.';
+    alert(`Presenças: ${sess.course} — ${sess.group || ''}\n\n${msg}`);
+  },
+
+  exportCSV(sid) {
+    sid = sid || this.activeId;
+    if (!sid) return;
+    const att  = storGet('cd_att_' + sid) || [];
+    const sess = this.sessions[sid];
+    if (!att.length) { alert('Nenhuma presença para exportar.'); return; }
+    const header = 'Matrícula,Nome,Data/Hora,ID Dispositivo\n';
+    const rows   = att.map(r =>
+      `${r.matricula},"${r.nome}","${fmt(r.ts)}","${r.devId || '—'}"`
+    ).join('\n');
+    const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = 'presencas_' + sess.course.replace(/\s+/g, '_')
+               + '_' + new Date(sess.createdAt).toLocaleDateString('pt-BR').replace(/\//g, '-') + '.csv';
+    a.click();
+  }
+};
+
+window.addEventListener('DOMContentLoaded', () => A.init());
+</script>
+</body>
+</html>
