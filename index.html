@@ -821,7 +821,7 @@ const A = {
     const sess   = await fbGet('cd_sessions/' + sid);
     if (!att.length) { alert('Nenhuma presença para exportar.'); return; }
     const header = 'Matrícula;Nome;Data/Hora;ID Dispositivo\n';
-    const rows   = att.map(r => `${r.matricula},"${r.nome}","${fmt(r.ts)}","${r.devId||'—'}"`).join('\n');
+    const rows   = att.map(r => `${r.matricula};"${r.nome}";"${fmt(r.ts)}";"${r.devId||'—'}"`).join('\n');
     const blob   = new Blob(['\uFEFF' + header + rows], { type:'text/csv;charset=utf-8' });
     const a      = document.createElement('a');
     a.href       = URL.createObjectURL(blob);
