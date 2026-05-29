@@ -483,7 +483,9 @@ const A = {
   async init() {
     this._devId = getDeviceId();
 
-    const cfg = {
+   const savedCfg = lGet(STOR_CFG);
+
+const cfg = savedCfg || {
       apiKey:            "AIzaSyBuIS-MbVeZd4i7ty3wv_dJNhpqNdOVqW8",
       authDomain:        "chamada-2901e.firebaseapp.com",
       databaseURL:       "https://chamada-2901e-default-rtdb.firebaseio.com",
@@ -491,7 +493,7 @@ const A = {
       storageBucket:     "chamada-2901e.firebasestorage.app",
       messagingSenderId: "960322035637",
       appId:             "1:960322035637:web:b66c09a30b9bf7c44583fc"
-    };
+};
 
     try {
       if (!firebase.apps.length) firebase.initializeApp(cfg);
