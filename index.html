@@ -218,6 +218,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" onclick="A.show('turmas')">Turmas</button>
         <button class="btn" onclick="A.show('hist')">Histórico</button>
+        <button class="btn" onclick="A.show('freq')">Frequência</button>
         <button class="btn" onclick="A.showSettings()">Configurações</button>
         <button class="btn" onclick="A.logout()">Sair</button>
       </div>
@@ -405,6 +406,37 @@
     </div>
   </div>
 
+  <!-- ============ FREQUÊNCIA ============ -->
+  <div id="vfreq" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Frequência acumulada</span>
+      <button class="btn" onclick="A.show('dash')">← Voltar</button>
+    </div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+        <div class="fg" style="margin:0">
+          <label>Turma</label>
+          <select id="freqTurma" class="inp" onchange="A.renderFreq()"></select>
+        </div>
+        <div class="fg" style="margin:0">
+          <label>Frequência mínima (%)</label>
+          <input id="freqLimite" class="inp" type="number" min="0" max="100" step="1"
+                 oninput="A.renderFreq()">
+        </div>
+      </div>
+      <div id="freqResumo" style="margin-top:14px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn danger" onclick="A.copiarAbaixoLimite()">Copiar quem está abaixo do limite</button>
+        <button class="btn" onclick="A.exportFreqCSV()">Exportar planilha (CSV)</button>
+      </div>
+      <div class="hint" id="freqMsg" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="sechead" id="freqTitulo">Alunos</div>
+      <div id="freqLista" class="scroll" style="max-height:460px"></div>
+    </div>
+  </div>
+
   <!-- ============ ALUNO ============ -->
   <div id="vstudent" class="view">
     <div class="card">
@@ -466,6 +498,21 @@
         <textarea id="cursosTxt" class="inp" rows="6"></textarea>
       </div>
       <button class="btn blue sm" onclick="A.salvarCursos()">Salvar cursos</button>
+
+      <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
+      <div class="sechead" style="color:var(--red-dark)">Manutenção — documentos nos registros antigos</div>
+      <p class="hint" style="margin-bottom:8px">
+        A versão antiga pedia a matrícula, e muitos alunos digitaram o CPF. Esses números estão
+        no nó público do banco. Esta ferramenta encontra os documentos que <strong>não</strong>
+        correspondem a nenhuma matrícula das suas turmas, baixa um backup e os apaga do Firebase.
+        Os nomes e os horários dos registros são preservados.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="A.varrerDocumentos()">Verificar</button>
+        <button class="btn sm danger" id="btnLimpar" style="display:none"
+                onclick="A.limparDocumentos()">Baixar backup e apagar</button>
+      </div>
+      <div class="hint" id="docMsg" style="margin-top:6px"></div>
 
       <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
       <div class="sechead">Chave de sincronização</div>
@@ -539,6 +586,8 @@ const STOR_TURMAS   = 'cd_turmas_v1';
 const STOR_CURSOS   = 'cd_cursos_v1';
 const STOR_CHAMADAS = 'cd_chamadas_v1';
 const STOR_SYNC     = 'cd_synckey';
+const STOR_DEVID2   = 'cd_devid2';
+const STOR_LIMITE   = 'cd_limite_freq';
 
 const CURSOS_PADRAO = [
   'Publicidade e Propaganda',
@@ -607,6 +656,9 @@ async function fbPush(path, val) { return await db.ref(path).push(val); }
    NORMALIZAÇÃO E COMPARAÇÃO DE NOMES
    ================================================================ */
 const PARTICULAS = new Set(['de','da','do','dos','das','e','del','di','du','van','von','la','le']);
+
+/** Só os dígitos — matrículas digitadas com espaço ou ponto ainda casam. */
+function soDigitos(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
 
 function normNome(s) {
   s = String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -715,6 +767,12 @@ function conciliar(registros, alunos, resolucoes) {
     if (manual) {
       const a = alunos.find(x => x.id === manual);
       if (a) { if (!porAluno.has(a.id)) porAluno.set(a.id, []); porAluno.get(a.id).push({ ...r, modo:'manual' }); continue; }
+    }
+    // Registros antigos guardavam a matrícula: chave exata, sem ambiguidade possível.
+    if (soDigitos(r.matricula)) {
+      const d = soDigitos(r.matricula);
+      const a = alunos.find(x => soDigitos(x.matricula) === d);
+      if (a) { if (!porAluno.has(a.id)) porAluno.set(a.id, []); porAluno.get(a.id).push({ ...r, modo:'matricula' }); continue; }
     }
     const c = classificarNome(r.nome, alunos);
     if (c.tipo === 'exato' || c.tipo === 'aproximado') {
@@ -932,10 +990,33 @@ function buildFingerprint() {
   return (fnv32(raw).toString(16).padStart(8,'0')+'-'+fnv32(raw.split('').reverse().join('')).toString(16).padStart(8,'0')).toUpperCase();
 }
 
+/**
+ * Identificador do NAVEGADOR, sorteado uma vez e guardado localmente.
+ *
+ * A versão anterior usava só a impressão digital do aparelho — e ela não
+ * distingue aparelhos, distingue MODELOS: dois alunos com o mesmo iPhone,
+ * mesmo sistema e mesmo fuso produziam exatamente o mesmo código, e o
+ * segundo a registrar era barrado sem ter feito nada errado. Numa turma
+ * grande isso acontece o tempo todo.
+ *
+ * Se o navegador não deixar guardar nada (aba anônima restritiva), o id é
+ * sorteado de novo a cada vez e ninguém é bloqueado — a duplicidade ainda
+ * é pega no cruzamento com a lista oficial.
+ */
 function getDeviceId() {
-  let id = lGet(STOR_DEVID);
-  if (!id) { id = buildFingerprint(); lSet(STOR_DEVID, id); }
+  let id = lGet(STOR_DEVID2);
+  if (!id) {
+    id = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (uid() + uid() + uid());
+    lSet(STOR_DEVID2, id);
+  }
   return id;
+}
+
+/** Impressão do modelo do aparelho — guardada só para conferência, nunca bloqueia. */
+function getModeloId() {
+  let m = lGet(STOR_DEVID);
+  if (!m) { m = buildFingerprint(); lSet(STOR_DEVID, m); }
+  return m;
 }
 
 /* ================================================================
@@ -951,6 +1032,8 @@ const A = {
   _conf: null,       // { sess, turma, registros, resolucoes, resultado }
   _confAba: 'faltosos',
   _impPrev: null,
+  _freq: null,
+  _docsAchados: null,
   _encerrando: false,
 
   /* ---- Inicialização ---- */
@@ -1025,6 +1108,7 @@ const A = {
     if (v === 'settings') this._fillSettings();
     if (v === 'turmas')   this.renderTurmas();
     if (v === 'hist')     { this.montarHistFiltro(); this.renderHist(); }
+    if (v === 'freq')     { this.montarFreqSelect(); this.renderFreq(); }
   },
 
   /* ---- Login ---- */
@@ -1294,7 +1378,14 @@ const A = {
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
             ${s.active?`<button class="btn sm" onclick="A.reopenProj('${s.id}')">Projetar</button>`:''}
-            ${temTurma?`<button class="btn sm blue" onclick="A.abrirConferencia('${s.id}')">Conferir</button>`:''}
+            ${temTurma
+              ? `<button class="btn sm blue" onclick="A.abrirConferencia('${s.id}')">Conferir</button>`
+              : (getTurmas().length
+                  ? `<select class="inp" style="width:auto;max-width:190px;font-size:12px;padding:4px 8px"
+                             onchange="A.vincularTurma('${s.id}', this.value)">
+                       <option value="">Vincular a uma turma…</option>
+                       ${getTurmas().map(t => `<option value="${escJs(t.id)}">${esc(t.disciplina)} — ${esc(t.turma)}</option>`).join('')}
+                     </select>` : '')}
             <button class="btn sm" onclick="A.viewAtt('${s.id}')">Ver</button>
             <button class="btn sm" onclick="A.exportCSV('${s.id}')">CSV</button>
           </div>
@@ -1478,11 +1569,12 @@ const A = {
       return;
     }
     if (att.some(r => r.devId === devId)) {
-      err.textContent = 'Este dispositivo já registrou uma presença nesta aula.';
+      err.textContent = 'Este navegador já registrou uma presença nesta aula. ' +
+        'Se você emprestou o aparelho a alguém, abra em uma aba anônima ou avise o professor.';
       return;
     }
 
-    await fbPush('cd_att/' + found.id, { nome:nom, curso:curso, ts:Date.now(), devId });
+    await fbPush('cd_att/' + found.id, { nome:nom, curso:curso, ts:Date.now(), devId, modelo:getModeloId() });
 
     err.textContent = '';
     document.getElementById('smsg').textContent  = nom + ' — ' + found.course;
@@ -1498,7 +1590,7 @@ const A = {
     const obj = await fbGet('cd_att/' + sid) || {};
     return Object.entries(obj).map(([key, r]) => ({
       key, nome:r.nome || '', curso:r.curso || '', ts:r.ts || 0,
-      devId:r.devId || '', matricula:r.matricula || ''
+      devId:r.devId || '', modelo:r.modelo || '', matricula:r.matricula || ''
     })).sort((a,b) => a.ts - b.ts);
   },
 
@@ -1798,6 +1890,239 @@ const A = {
     navigator.clipboard.writeText(txt)
       .then(() => alert(c.faltosos.length + ' faltoso(s) copiado(s).'))
       .catch(() => prompt('Copie manualmente:', txt));
+  },
+
+
+  /* ================================================================
+     MANUTENÇÃO: DOCUMENTOS NOS REGISTROS ANTIGOS
+     ================================================================ */
+
+  /**
+   * Percorre todos os registros gravados e separa os valores do campo
+   * "matricula" em reconhecidos (batem com alguma matrícula oficial) e
+   * não reconhecidos — que na prática são CPFs digitados pelos alunos
+   * quando o formulário ainda pedia matrícula.
+   */
+  async varrerDocumentos() {
+    const msg = document.getElementById('docMsg');
+    msg.textContent = 'Varrendo os registros…';
+    document.getElementById('btnLimpar').style.display = 'none';
+
+    if (!getTurmas().length) {
+      msg.textContent = 'Importe as turmas antes: sem a lista oficial não dá para saber ' +
+                        'qual número é matrícula legítima.';
+      return;
+    }
+    const oficiais = new Set();
+    for (const t of getTurmas()) for (const a of t.alunos) {
+      const d = soDigitos(a.matricula); if (d) oficiais.add(d);
+    }
+
+    let todos;
+    try { todos = await fbGet('cd_att') || {}; }
+    catch(e) { msg.textContent = 'Não consegui ler os registros: ' + e.message; return; }
+
+    const achados = [];
+    let comMatriculaOk = 0;
+    for (const [sid, regs] of Object.entries(todos)) {
+      for (const [key, r] of Object.entries(regs || {})) {
+        const d = soDigitos(r && r.matricula);
+        if (!d) continue;
+        if (oficiais.has(d)) { comMatriculaOk++; continue; }
+        achados.push({ sid, key, nome: (r && r.nome) || '', ts: (r && r.ts) || 0,
+                       valor: String(r.matricula), digitos: d.length });
+      }
+    }
+    this._docsAchados = achados;
+
+    if (!achados.length) {
+      msg.textContent = `Nada a remover. ${comMatriculaOk} registro(s) com matrícula válida, ` +
+                        'nenhum documento estranho.';
+      return;
+    }
+    const por11 = achados.filter(a => a.digitos === 11).length;
+    msg.innerHTML = `<strong>${achados.length} registro(s)</strong> com número que não é matrícula ` +
+      `de nenhuma turma sua — ${por11} deles com 11 dígitos (formato de CPF). ` +
+      `${comMatriculaOk} registro(s) com matrícula válida ficam intactos.<br>` +
+      `Alunos afetados: ${esc([...new Set(achados.map(a => a.nome))].slice(0,6).join(' · '))}` +
+      (new Set(achados.map(a => a.nome)).size > 6 ? ' …' : '');
+    document.getElementById('btnLimpar').style.display = '';
+  },
+
+  /** Baixa um backup local e remove os documentos do banco público. */
+  async limparDocumentos() {
+    const achados = this._docsAchados || [];
+    const msg = document.getElementById('docMsg');
+    if (!achados.length) { msg.textContent = 'Rode a verificação antes.'; return; }
+    if (!confirm(`Apagar ${achados.length} documento(s) do Firebase?\n\n` +
+                 'Um arquivo de backup será baixado antes, para o seu computador. ' +
+                 'Nomes e horários dos registros permanecem.')) return;
+
+    // Backup local primeiro — nada é perdido sem cópia.
+    const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+    const csv = 'Sessao;Registro;Nome;Documento informado;Data/Hora\n' +
+      achados.map(a => [q(a.sid), q(a.key), q(a.nome), q(a.valor), q(a.ts ? fmt(a.ts) : '')].join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'documentos-removidos-' + new Date().toISOString().slice(0,10) + '.csv';
+    link.click();
+
+    msg.textContent = 'Apagando… 0/' + achados.length;
+    let feitos = 0, erros = 0;
+    for (const a of achados) {
+      try { await fbUpdate('cd_att/' + a.sid + '/' + a.key, { matricula: null }); feitos++; }
+      catch(_) { erros++; }
+      if (feitos % 10 === 0) msg.textContent = `Apagando… ${feitos}/${achados.length}`;
+    }
+    this._docsAchados = [];
+    document.getElementById('btnLimpar').style.display = 'none';
+    msg.textContent = `${feitos} documento(s) removido(s) do banco` +
+      (erros ? `, ${erros} falharam — rode a verificação de novo.` : '. O backup foi para a sua pasta de downloads.');
+  },
+
+  /* ================================================================
+     VÍNCULO RETROATIVO E FREQUÊNCIA ACUMULADA
+     ================================================================ */
+
+  /** Liga uma sessão antiga (sem turma) à lista oficial, liberando a conferência. */
+  async vincularTurma(sid, turmaId) {
+    if (!turmaId) return;
+    const t = getTurma(turmaId);
+    if (!t) return;
+    if (!confirm(`Vincular esta chamada à turma "${t.disciplina} — ${t.turma}"?\n\n` +
+                 'Os registros já feitos serão cruzados com a lista oficial. ' +
+                 'Você pode desfazer vinculando a outra turma depois.')) { this.loadDash(); return; }
+    try { await fbUpdate('cd_sessions/' + sid, { turmaId }); }
+    catch(e) { alert('Não consegui gravar o vínculo: ' + e.message); return; }
+    await this.abrirConferencia(sid);
+  },
+
+  /**
+   * Junta todas as chamadas salvas de uma turma num quadro por aluno.
+   * Conta apenas as chamadas efetivamente salvas no histórico — quem não
+   * salvou a conferência de uma aula não a vê aqui.
+   */
+  _apurarFrequencia(turmaId) {
+    const turma = getTurma(turmaId);
+    if (!turma) return null;
+    const chamadas = getChamadas().filter(c => c.turmaId === turmaId)
+                                  .sort((a, b) => a.data - b.data);
+    const linhas = turma.alunos.map(a => ({
+      aluno: a, presencas: 0, faltas: 0, datasFalta: []
+    }));
+    const porId = new Map(linhas.map(l => [l.aluno.id, l]));
+
+    for (const ch of chamadas) {
+      const presentes = new Set((ch.presentes || []).map(p => p.id));
+      for (const l of linhas) {
+        if (presentes.has(l.aluno.id)) l.presencas++;
+        else { l.faltas++; l.datasFalta.push(ch.data); }
+      }
+    }
+    const total = chamadas.length;
+    for (const l of linhas) l.pct = total ? (l.presencas / total) * 100 : null;
+    linhas.sort((x, y) => (x.pct === null ? 0 : x.pct - y.pct) || x.aluno.nome.localeCompare(y.aluno.nome, 'pt-BR'));
+    return { turma, chamadas, total, linhas };
+  },
+
+  montarFreqSelect() {
+    const sel = document.getElementById('freqTurma');
+    const turmas = getTurmas();
+    sel.innerHTML = turmas.length
+      ? turmas.map(t => `<option value="${esc(t.id)}">${esc(t.disciplina)} — ${esc(t.turma)}</option>`).join('')
+      : '<option value="">Nenhuma turma cadastrada</option>';
+    const lim = document.getElementById('freqLimite');
+    if (!lim.value) lim.value = lGet(STOR_LIMITE) || 75;
+  },
+
+  _limiteFreq() {
+    let v = parseFloat(document.getElementById('freqLimite').value);
+    if (isNaN(v) || v < 0 || v > 100) v = 75;
+    lSet(STOR_LIMITE, v);
+    return v;
+  },
+
+  renderFreq() {
+    const id = document.getElementById('freqTurma').value;
+    const resumo = document.getElementById('freqResumo');
+    const lista  = document.getElementById('freqLista');
+    document.getElementById('freqMsg').textContent = '';
+    this._freq = id ? this._apurarFrequencia(id) : null;
+    const f = this._freq;
+
+    if (!f) { resumo.innerHTML = '<span class="hint">Selecione uma turma.</span>'; lista.innerHTML = ''; return; }
+    if (!f.total) {
+      resumo.innerHTML = '<span class="hint">Nenhuma chamada salva no histórico para esta turma ainda. ' +
+        'As chamadas entram aqui quando você clica em <strong>Salvar no histórico</strong> na tela de conferência.</span>';
+      lista.innerHTML = ''; return;
+    }
+
+    const lim = this._limiteFreq();
+    const abaixo = f.linhas.filter(l => l.pct < lim);
+    const datas  = f.chamadas.map(c => fmtData(c.data));
+    resumo.innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-n">${f.total}</div><div class="kpi-l">Chamadas</div></div>
+        <div class="kpi"><div class="kpi-n">${f.turma.alunos.length}</div><div class="kpi-l">Alunos</div></div>
+        <div class="kpi"><div class="kpi-n" style="color:var(--red-dark)">${abaixo.length}</div><div class="kpi-l">Abaixo de ${lim}%</div></div>
+        <div class="kpi"><div class="kpi-n">${(f.linhas.reduce((s,l)=>s+l.pct,0)/f.linhas.length).toFixed(0)}%</div><div class="kpi-l">Média da turma</div></div>
+      </div>
+      <p class="hint" style="margin-top:10px">Chamadas consideradas: ${esc(datas.join(' · '))}</p>`;
+
+    document.getElementById('freqTitulo').textContent =
+      `${f.turma.disciplina} — ${f.turma.turma} · ${f.linhas.length} alunos`;
+
+    lista.innerHTML = f.linhas.map(l => {
+      const critico = l.pct < lim;
+      const cor = critico ? 'var(--red-dark)' : (l.pct < lim + 10 ? 'var(--amber-dark)' : 'var(--green-dark)');
+      return `<div class="lrow">
+        <div style="flex:1;min-width:0">
+          <div>${esc(l.aluno.nome)} ${critico ? '<span class="badge badge-red">abaixo do limite</span>' : ''}</div>
+          <div class="hint">${l.presencas} presença(s) · ${l.faltas} falta(s)${
+            l.datasFalta.length ? ' · faltou em ' + esc(l.datasFalta.map(fmtData).join(', ')) : ''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:500;color:${cor}">${l.pct.toFixed(0)}%</div>
+          <div class="mono">${esc(l.aluno.matricula||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  copiarAbaixoLimite() {
+    const f = this._freq, msg = document.getElementById('freqMsg');
+    if (!f || !f.total) { msg.textContent = 'Nada para copiar.'; return; }
+    const lim = this._limiteFreq();
+    const abaixo = f.linhas.filter(l => l.pct < lim);
+    if (!abaixo.length) { msg.textContent = `Ninguém está abaixo de ${lim}%.`; return; }
+    const txt = abaixo.map(l => `${l.aluno.nome} — ${l.pct.toFixed(0)}% (${l.faltas} falta(s))`).join('\n');
+    navigator.clipboard.writeText(txt)
+      .then(() => { msg.textContent = `${abaixo.length} aluno(s) copiado(s).`; })
+      .catch(() => prompt('Copie manualmente:', txt));
+  },
+
+  exportFreqCSV() {
+    const f = this._freq;
+    if (!f || !f.total) { document.getElementById('freqMsg').textContent = 'Nada para exportar.'; return; }
+    const q = s => '"' + String(s==null?'':s).replace(/"/g,'""') + '"';
+    const datas = f.chamadas.map(c => fmtData(c.data));
+    const cab = ['Aluno','Matrícula','Presenças','Faltas','Frequência (%)', ...datas].map(q).join(';');
+    const linhas = f.linhas.map(l => {
+      const marcas = f.chamadas.map(ch =>
+        (ch.presentes || []).some(p => p.id === l.aluno.id) ? 'P' : 'F');
+      return [q(l.aluno.nome), q(l.aluno.matricula||''), l.presencas, l.faltas,
+              l.pct.toFixed(0), ...marcas.map(q)].join(';');
+    });
+    const topo = `${q(f.turma.disciplina)}\n${q(f.turma.turma)}\n${q('Chamadas: '+f.total)}\n\n`;
+    const blob = new Blob(['\uFEFF' + topo + cab + '\n' + linhas.join('\n')],
+                          { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'frequencia_' + (f.turma.turma||'turma') + '_' +
+                 new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    document.getElementById('freqMsg').textContent = 'Planilha exportada.';
   },
 
   /* ---- Ver lista / Exportar CSV bruto ---- */

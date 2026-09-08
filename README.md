@@ -84,6 +84,7 @@ ignorados). A partir daí, em camadas:
 
 | Situação | Resultado |
 |---|---|
+| O registro traz matrícula (formato antigo) e ela existe na lista | presente, automático — chave exata |
 | Nome completo igual ao da lista | presente, automático |
 | Nome abreviado, candidato único na turma, **mesmo primeiro nome e mesmo último sobrenome** | presente, marcado como "aproximado" e listado para conferência |
 | Erro de digitação, nome fora de ordem, ou só iniciais | vai para decisão manual; o aluno segue faltoso até você confirmar |
@@ -93,6 +94,38 @@ ignorados). A partir daí, em camadas:
 Ninguém entra como presente por semelhança frouxa. Dois registros que apontem para o mesmo
 aluno contam uma vez só; os extras aparecem em **duplicidades**.
 
+## Frequência acumulada
+
+A aba **Frequência** soma todas as chamadas salvas de uma turma e mostra, por aluno, presenças,
+faltas, as datas em que faltou e o percentual. O limite mínimo é configurável na própria tela
+(padrão 75%) e quem fica abaixo aparece marcado, com botão para copiar a lista e exportar uma
+planilha em CSV — uma coluna por chamada, com P ou F.
+
+Só entram no cálculo as chamadas que você **salvou no histórico** na tela de conferência.
+
+## Recuperar aulas antigas
+
+Sessões feitas antes desta versão não têm turma vinculada. No painel, elas aparecem com um
+seletor **"Vincular a uma turma…"**: escolha a turma e o app cruza os registros já gravados com
+a lista oficial, retroativamente.
+
+Esses registros antigos guardavam a matrícula do aluno, e a matrícula é chave exata — a
+conciliação deles é mais confiável que a por nome. Depois de vincular, confira e salve no
+histórico para a aula entrar na frequência.
+
+## Documentos nos registros antigos
+
+Enquanto o formulário pedia matrícula, muitos alunos digitaram o **CPF** — e esses números
+ficaram no `cd_att`, que é público. Em *Configurações → Manutenção* há uma ferramenta que
+varre todos os registros, separa os números que não correspondem a nenhuma matrícula das suas
+turmas, baixa um backup em CSV para o seu computador e então os apaga do Firebase. Nomes e
+horários dos registros continuam lá.
+
+Importe todas as turmas antes de rodar: o que define um número como legítimo é ele bater com
+alguma matrícula oficial. Registros de turmas não importadas seriam considerados estranhos.
+
+A versão atual não pede documento nenhum, então o problema não volta a acontecer.
+
 ## Configurações
 
 - **Cursos** do formulário do aluno: lista editável, um por linha.
@@ -101,6 +134,9 @@ aluno contam uma vez só; os extras aparecem em **duplicidades**.
 
 ## Limitações conhecidas
 
+- O bloqueio de registro duplicado é por navegador, não por aparelho: quem limpar os dados do
+  site ou abrir uma aba anônima consegue registrar de novo. A duplicidade continua sendo pega no
+  cruzamento com a lista oficial, que é onde ela importa.
 - A senha do professor é verificada no navegador; não protege contra quem inspecionar o código.
   Ela não guarda relação com a chave de sincronização — trocar uma não troca a outra.
 - `cd_att` é público por necessidade: os alunos precisam escrever ali sem autenticação.
