@@ -1,2 +1,109 @@
 # chamada
-Automatização de chamada para registro de frequência em sala de aula
+
+Automatização de chamada para registro de frequência em sala de aula.
+
+Aplicativo de arquivo único (`index.html`). Não precisa de build nem de servidor próprio:
+basta publicar o arquivo (GitHub Pages, por exemplo) e abrir a URL.
+
+## Como funciona
+
+O professor seleciona a turma e inicia a chamada. A tela de projeção exibe um QR code e um
+código de 6 caracteres que gira a cada 2 minutos. Os alunos abrem o link, escolhem o curso e
+digitam o nome completo. Ao encerrar, o app cruza os registros com a lista oficial da turma e
+separa **presentes**, **faltosos**, **não identificados** e **duplicidades**.
+
+## Onde ficam os dados
+
+Tudo fica no Firebase Realtime Database, em dois espaços com proteções diferentes:
+
+| Caminho | Conteúdo | Acesso |
+|---|---|---|
+| `cd_sessions`, `cd_att` | sessões e o que os alunos digitaram | leitura e escrita públicas — os alunos precisam gravar ali |
+| `cd_priv/<chave>` | listas oficiais, cursos e histórico das chamadas | só quem tem a chave exata |
+
+O `localStorage` do navegador guarda uma cópia de trabalho, para o app funcionar sem rede.
+
+### ⚠ Regras do banco — obrigatório
+
+As regras precisam **deixar de ser abertas na raiz**, senão a chave não protege nada. Em
+*Realtime Database → Regras*, use:
+
+```json
+{
+  "rules": {
+    "cd_sessions": { ".read": true, ".write": true },
+    "cd_att":      { ".read": true, ".write": true },
+    "cd_priv": {
+      "$chave": { ".read": true, ".write": true }
+    }
+  }
+}
+```
+
+Como não há `.read` na raiz nem em `cd_priv`, ninguém consegue **listar** as chaves existentes:
+só alcança os dados quem informa a chave inteira. São 32 caracteres aleatórios, o que torna a
+adivinhação inviável — mas é proteção por segredo, não por autenticação. Quem receber a chave
+(ou tiver acesso ao navegador do professor) alcança tudo.
+
+`cd_att` continua público: nomes digitados pelos alunos, horários e a impressão digital do
+aparelho ficam legíveis para quem tiver a URL do app. Isso já valia na versão anterior.
+
+### Chave de sincronização
+
+Gerada na primeira vez e visível em **Configurações**. Para usar outro computador: copie a
+chave lá e cole em *Configurações → Usar outra chave*. Trate-a como uma senha.
+
+**Turmas → Exportar backup (.json)** salva turmas, cursos, histórico e a chave num arquivo.
+Guarde-o fora do repositório.
+
+## Cadastrar turmas
+
+Em **Turmas**, cole a lista copiada do sistema da UNI7. O parser aceita:
+
+```
+Semiótica (Publicidade e Propaganda)
+Código: GSER032901
+Turma: CSE0010204DNA
+Carga Horária: 40h
+Alunos (27):
+   * Alicia Barros Silva (56054893)
+   * Ana Beatriz Brito de Menezes (56054628)
+```
+
+Também aceita várias turmas de uma vez, listas simples de nomes (um por linha) e os formatos
+`56054893 Nome`, `56054893;Nome` e `Nome;56054893`. Nada é gravado sem a sua confirmação na
+prévia.
+
+O identificador da turma é `Código-Turma` (ex.: `GSER032901-CSE0010204DNA`), porque o mesmo
+código de turma se repete em disciplinas diferentes.
+
+## Como os nomes são reconhecidos
+
+Nomes são normalizados (maiúsculas, acentos, espaços e partículas como "de/da/dos" são
+ignorados). A partir daí, em camadas:
+
+| Situação | Resultado |
+|---|---|
+| Nome completo igual ao da lista | presente, automático |
+| Nome abreviado, candidato único na turma, **mesmo primeiro nome e mesmo último sobrenome** | presente, marcado como "aproximado" e listado para conferência |
+| Erro de digitação, nome fora de ordem, ou só iniciais | vai para decisão manual; o aluno segue faltoso até você confirmar |
+| Corresponde a mais de um aluno | vai para decisão manual |
+| Ninguém corresponde | não identificado |
+
+Ninguém entra como presente por semelhança frouxa. Dois registros que apontem para o mesmo
+aluno contam uma vez só; os extras aparecem em **duplicidades**.
+
+## Configurações
+
+- **Cursos** do formulário do aluno: lista editável, um por linha.
+- **Senha do professor**: padrão `chamada`, guardada apenas neste navegador.
+- **Firebase**: o projeto padrão está embutido em `A.init()`; para trocar, edite o objeto `cfg`.
+
+## Limitações conhecidas
+
+- A senha do professor é verificada no navegador; não protege contra quem inspecionar o código.
+  Ela não guarda relação com a chave de sincronização — trocar uma não troca a outra.
+- `cd_att` é público por necessidade: os alunos precisam escrever ali sem autenticação.
+- As listas oficiais dependem da chave permanecer secreta e das regras acima estarem aplicadas.
+- A identificação é por nome. Duas pessoas com o mesmo primeiro nome e o mesmo último sobrenome
+  são indistinguíveis — por isso as presenças "aproximadas" ficam sempre visíveis para conferir.

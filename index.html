@@ -24,6 +24,8 @@
       --bg:#1e1e1c; --bg2:#2a2a28; --bg3:#333330;
       --text:#f0f0ec; --text2:#9b9b96; --text3:#6b6b66;
       --border:rgba(255,255,255,.12); --border2:rgba(255,255,255,.22);
+      --green-bg:#20301040; --red-bg:#3a161640; --amber-bg:#33240c40; --blue-bg:#16244a40;
+      --green-dark:#9ecb70; --red-dark:#e59595; --amber-dark:#e0b06a; --blue-dark:#8fb0f5;
     }
   }
   body {
@@ -41,19 +43,21 @@
     background:var(--bg); color:var(--text); transition:background .12s; white-space:nowrap;
   }
   .btn:hover { background:var(--bg2); } .btn:active { transform:scale(.98); }
-  .btn.primary { background:var(--green); color:var(--green-bg); border-color:var(--green-dark); }
+  .btn.primary { background:var(--green); color:#EAF3DE; border-color:var(--green); }
   .btn.primary:hover { background:var(--green-dark); }
-  .btn.danger { background:var(--red); color:var(--red-bg); border-color:var(--red-dark); }
+  .btn.danger { background:var(--red); color:#FCEBEB; border-color:var(--red); }
   .btn.danger:hover { background:var(--red-dark); }
-  .btn.blue { background:var(--blue); color:#fff; border-color:var(--blue-dark); }
+  .btn.blue { background:var(--blue); color:#fff; border-color:var(--blue); }
   .btn.blue:hover { background:var(--blue-dark); }
   .btn.full { width:100%; }
+  .btn.sm { font-size:12px; padding:5px 10px; }
   .inp {
     font-family:inherit; font-size:14px; padding:9px 12px;
     border:.5px solid var(--border2); border-radius:var(--radius);
     background:var(--bg); color:var(--text); width:100%; outline:none;
   }
   .inp:focus { border-color:var(--text2); } select.inp { cursor:pointer; }
+  textarea.inp { resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.5; }
   label { font-size:12px; color:var(--text2); display:block; margin-bottom:5px; }
   .fg { margin-bottom:14px; }
   .err { font-size:12px; color:#c0392b; min-height:18px; margin-bottom:8px; }
@@ -62,6 +66,10 @@
   .badge-green { background:var(--green-bg); color:var(--green-dark); }
   .badge-gray  { background:var(--bg2); color:var(--text2); }
   .badge-amber { background:var(--amber-bg); color:var(--amber-dark); }
+  .badge-red   { background:var(--red-bg); color:var(--red-dark); }
+  .badge-blue  { background:var(--blue-bg); color:var(--blue-dark); }
+  .sechead { font-size:12px; font-weight:500; color:var(--text2); text-transform:uppercase;
+             letter-spacing:.5px; margin-bottom:10px; }
 
   /* SETUP */
   #vsetup { flex-direction:column; align-items:center; justify-content:center; min-height:520px; }
@@ -71,8 +79,8 @@
   #vlogin { flex-direction:column; align-items:center; justify-content:center; min-height:420px; }
   #vlogin .card { width:100%; max-width:340px; }
 
-  /* DASH */
-  #vdash { flex-direction:column; gap:1rem; }
+  /* DASH / TURMAS / CONFERÊNCIA / HISTÓRICO */
+  #vdash, #vturmas, #vconf, #vhist { flex-direction:column; gap:1rem; }
 
   /* PROJ */
   #vproj { flex-direction:column; min-height:500px; background:var(--bg);
@@ -89,7 +97,7 @@
   }
   #vstudent .card { width:100%; max-width:380px; }
   #vsuccess .card { width:100%; max-width:340px; text-align:center; }
-  #vsettings .card { width:100%; max-width:400px; }
+  #vsettings .card { width:100%; max-width:440px; }
 
   .att-row { font-size:11px; padding:4px 7px; background:var(--bg2); border-radius:5px; }
   .exp-bar-wrap { width:100%; height:4px; background:var(--bg2); border-radius:2px; overflow:hidden; }
@@ -98,11 +106,28 @@
               text-align:center; background:var(--amber-bg); color:var(--amber-dark); display:none; }
   .exp-warn.on { display:block; }
 
+  /* Blocos da conferência */
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .kpi { border:.5px solid var(--border); border-radius:var(--radius); padding:12px; text-align:center;
+         cursor:pointer; background:var(--bg); transition:background .12s; }
+  .kpi:hover { background:var(--bg2); }
+  .kpi.sel { border-color:var(--text2); background:var(--bg2); }
+  .kpi-n { font-size:26px; font-weight:500; line-height:1.1; }
+  .kpi-l { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.4px; margin-top:3px; }
+  .lrow { display:flex; align-items:center; justify-content:space-between; gap:10px;
+          padding:8px 0; border-bottom:.5px solid var(--border); font-size:13px; }
+  .lrow:last-child { border-bottom:none; }
+  .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:var(--text2); }
+  .scroll { max-height:340px; overflow-y:auto; }
+
   /* Overlay de carregamento */
   #loading { position:fixed; inset:0; background:var(--bg3); display:flex;
              align-items:center; justify-content:center; z-index:999; font-size:13px; color:var(--text2); }
   #loading.off { display:none; }
 
+  @media (max-width:600px) {
+    .kpis { grid-template-columns:repeat(2,1fr); }
+  }
   @media (max-width:500px) {
     .proj-side { width:160px; min-width:160px; }
     #tok { font-size:32px !important; letter-spacing:6px !important; }
@@ -185,29 +210,43 @@
 
   <!-- ============ DASHBOARD ============ -->
   <div id="vdash" class="view">
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:20px">📋</span>
         <span style="font-size:16px;font-weight:500">Chamada Digital</span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="A.show('turmas')">Turmas</button>
+        <button class="btn" onclick="A.show('hist')">Histórico</button>
         <button class="btn" onclick="A.showSettings()">Configurações</button>
         <button class="btn" onclick="A.logout()">Sair</button>
       </div>
     </div>
 
     <div class="card">
-      <div style="font-size:14px;font-weight:500;margin-bottom:14px">Nova sessão de presença</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div class="fg" style="margin:0">
-          <label>Disciplina</label>
-          <input id="course" class="inp" placeholder="Ex: Gramática e Redação">
-        </div>
-        <div class="fg" style="margin:0">
-          <label>Turma</label>
-          <input id="group" class="inp" placeholder="Ex: Publicidade 2025.1">
-        </div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:14px">Nova chamada</div>
+
+      <div class="fg">
+        <label>Turma</label>
+        <select id="turmaSel" class="inp" onchange="A.onTurmaChange()"></select>
       </div>
+
+      <div id="livreWrap" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin:0">
+            <label>Disciplina</label>
+            <input id="course" class="inp" placeholder="Ex: Semiótica">
+          </div>
+          <div class="fg" style="margin:0">
+            <label>Turma (texto livre)</label>
+            <input id="group" class="inp" placeholder="Ex: CSE0010204DNA">
+          </div>
+        </div>
+        <p class="hint" style="margin-bottom:10px">
+          Sem turma vinculada não há conferência automática — o app só coleta os nomes, como antes.
+        </p>
+      </div>
+
       <div class="fg" style="margin:0">
         <label>Expiração automática da sessão</label>
         <select id="dur" class="inp">
@@ -220,13 +259,47 @@
       </div>
       <div class="err" id="serr" style="margin-top:8px"></div>
       <button class="btn primary" style="margin-top:10px" onclick="A.createSession()">
-        Iniciar sessão e exibir QR code
+        Iniciar chamada e exibir QR code
       </button>
     </div>
 
     <div class="card">
       <div style="font-size:14px;font-weight:500;margin-bottom:14px">Sessões anteriores</div>
       <div id="slist"><span class="hint">Nenhuma sessão ainda.</span></div>
+    </div>
+  </div>
+
+  <!-- ============ TURMAS ============ -->
+  <div id="vturmas" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Turmas e listas oficiais</span>
+      <button class="btn" onclick="A.show('dash')">← Voltar</button>
+    </div>
+
+    <div class="card">
+      <div class="sechead">Importar do sistema da UNI7</div>
+      <p class="hint" style="margin-bottom:10px">
+        Cole a lista copiada do sistema. Pode colar <strong>várias turmas de uma vez</strong> —
+        o app separa pelos blocos <code>Código:</code> / <code>Turma:</code>. Também aceita
+        uma lista simples de nomes, um por linha, com ou sem matrícula entre parênteses.
+      </p>
+      <div class="fg">
+        <textarea id="impTxt" class="inp" rows="9" placeholder="Semiótica&#10;Código: GSER032901&#10;Turma: CSE0010204DNA&#10;Carga Horária: 40h&#10;Alunos (27):&#10;Alicia Barros Silva (56054893)&#10;Ana Beatriz Brito de Menezes (56054628)&#10;..."></textarea>
+      </div>
+      <div class="err" id="imperr"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn blue" onclick="A.previewImport()">Analisar lista</button>
+        <button class="btn" onclick="document.getElementById('impFile').click()">Importar backup (.json)</button>
+        <input type="file" id="impFile" accept=".json,application/json" style="display:none"
+               onchange="A.importBackup(this)">
+        <button class="btn" onclick="A.exportBackup()">Exportar backup (.json)</button>
+      </div>
+      <div id="impPrev" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <div class="sechead">Turmas cadastradas</div>
+      <div id="tlist"><span class="hint">Nenhuma turma cadastrada.</span></div>
     </div>
   </div>
 
@@ -240,7 +313,7 @@
         </div>
         <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;text-align:center">
           <div style="font-size:30px;font-weight:500" id="acnt">0</div>
-          <div style="font-size:11px;color:var(--text2)">presença(s)</div>
+          <div style="font-size:11px;color:var(--text2)" id="acntlbl">registro(s)</div>
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;margin-bottom:5px">
@@ -252,14 +325,14 @@
           </div>
         </div>
         <div id="expwarn" class="exp-warn">⚠ Encerrando em breve</div>
-        <div style="font-size:12px;font-weight:500;color:var(--text2)">Presentes</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text2)">Registros</div>
         <div id="alist" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;
              gap:5px;max-height:200px"></div>
         <div style="display:flex;flex-direction:column;gap:7px;
              border-top:.5px solid var(--border);padding-top:10px">
           <button class="btn full" onclick="A.exportCSV()">Exportar CSV</button>
-          <button class="btn full" onclick="A.leaveProj()">← Dashboard</button>
-          <button class="btn danger full" onclick="A.endSession()">Encerrar sessão</button>
+          <button class="btn full" onclick="A.leaveProj()">← Painel</button>
+          <button class="btn danger full" onclick="A.endSession()">Encerrar e conferir</button>
         </div>
       </div>
       <div class="proj-main">
@@ -289,6 +362,49 @@
     </div>
   </div>
 
+  <!-- ============ CONFERÊNCIA ============ -->
+  <div id="vconf" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:16px;font-weight:500" id="cfTitle">—</div>
+        <div style="font-size:12px;color:var(--text2)" id="cfSub">—</div>
+      </div>
+      <button class="btn" onclick="A.show('dash')">← Painel</button>
+    </div>
+
+    <div class="card">
+      <div class="kpis" id="cfKpis"></div>
+      <div id="cfPend" style="margin-top:14px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn danger" onclick="A.copiarFaltosos()">Copiar faltosos</button>
+        <button class="btn" onclick="A.copiarPresentes()">Copiar presentes</button>
+        <button class="btn" onclick="A.exportConfCSV()">Exportar chamada (CSV)</button>
+        <button class="btn primary" onclick="A.salvarChamada()">Salvar no histórico</button>
+      </div>
+      <div class="hint" id="cfMsg" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <div class="sechead" id="cfListTitle">Faltosos</div>
+      <div id="cfList" class="scroll"></div>
+    </div>
+  </div>
+
+  <!-- ============ HISTÓRICO ============ -->
+  <div id="vhist" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Histórico de chamadas</span>
+      <button class="btn" onclick="A.show('dash')">← Voltar</button>
+    </div>
+    <div class="card">
+      <div class="fg" style="margin-bottom:12px">
+        <label>Filtrar por turma</label>
+        <select id="histFiltro" class="inp" onchange="A.renderHist()"></select>
+      </div>
+      <div id="hlist"><span class="hint">Nenhuma chamada salva ainda.</span></div>
+    </div>
+  </div>
+
   <!-- ============ ALUNO ============ -->
   <div id="vstudent" class="view">
     <div class="card">
@@ -306,12 +422,15 @@
           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
       </div>
       <div class="fg">
-        <label>Matrícula</label>
-        <input id="mat" class="inp" placeholder="Número de matrícula" autocomplete="off">
+        <label>Curso</label>
+        <select id="cur" class="inp"></select>
       </div>
       <div class="fg">
         <label>Nome completo</label>
-        <input id="nom" class="inp" placeholder="Seu nome completo" autocomplete="name">
+        <input id="nom" class="inp" placeholder="Seu nome completo, como está na matrícula" autocomplete="name">
+        <p class="hint" style="margin-top:5px">
+          Escreva o nome completo. Apelidos ou só o primeiro nome impedem o registro de ser reconhecido.
+        </p>
       </div>
       <div class="err" id="aerr"></div>
       <button class="btn primary full" onclick="A.markAttendance()">Confirmar presença</button>
@@ -327,7 +446,7 @@
       <div style="width:56px;height:56px;background:var(--green-bg);border-radius:50%;
            display:flex;align-items:center;justify-content:center;
            margin:0 auto 1rem;font-size:24px;color:var(--green-dark)">✓</div>
-      <div style="font-size:18px;font-weight:500;color:var(--green-dark)">Presença confirmada!</div>
+      <div style="font-size:18px;font-weight:500;color:var(--green-dark)">Presença registrada!</div>
       <p style="font-size:13px;color:var(--text2);margin-top:10px" id="smsg">—</p>
       <p class="hint" style="margin-top:4px" id="stime">—</p>
       <button class="btn" style="margin-top:1.25rem;width:100%" onclick="A.show('student')">
@@ -341,8 +460,32 @@
     <div class="card">
       <div style="font-size:16px;font-weight:500;margin-bottom:1.25rem">Configurações</div>
 
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:10px;
-           text-transform:uppercase;letter-spacing:.5px">Senha do professor</div>
+      <div class="sechead">Cursos oferecidos no formulário do aluno</div>
+      <div class="fg">
+        <label>Um curso por linha</label>
+        <textarea id="cursosTxt" class="inp" rows="6"></textarea>
+      </div>
+      <button class="btn blue sm" onclick="A.salvarCursos()">Salvar cursos</button>
+
+      <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
+      <div class="sechead">Chave de sincronização</div>
+      <p class="hint" style="margin-bottom:8px">
+        Turmas, cursos e histórico ficam no Firebase sob esta chave. Cole-a em outro computador
+        para acessar os mesmos dados. <strong>Trate-a como uma senha</strong> — quem a tiver
+        alcança as listas nominais dos seus alunos.
+      </p>
+      <div class="fg">
+        <input id="syncKey" class="inp" readonly
+               style="font-family:ui-monospace,Menlo,monospace;font-size:12px">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="A.copiarChave()">Copiar chave</button>
+        <button class="btn sm" onclick="A.trocarChave()">Usar outra chave</button>
+      </div>
+      <div class="hint" id="syncMsg" style="margin-top:6px"></div>
+
+      <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
+      <div class="sechead">Senha do professor</div>
       <div class="fg">
         <label>Nova senha</label>
         <input id="npwd" class="inp" type="password" placeholder="Nova senha">
@@ -352,20 +495,26 @@
         <input id="npwd2" class="inp" type="password" placeholder="Repita a senha">
       </div>
       <div class="err" id="seterr"></div>
+      <button class="btn blue sm" onclick="A.changePassword()">Salvar senha</button>
 
       <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px;
-           text-transform:uppercase;letter-spacing:.5px">Firebase</div>
+      <div class="sechead">Firebase</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Projeto conectado:</div>
       <div style="font-family:monospace;font-size:12px;padding:8px 10px;background:var(--bg2);
            border-radius:var(--radius);color:var(--text2);word-break:break-all" id="cfginfo">—</div>
-      <button class="btn" style="margin-top:8px;font-size:12px" onclick="A.resetConfig()">
+      <button class="btn sm" style="margin-top:8px" onclick="A.resetConfig()">
         Reconfigurar Firebase
       </button>
 
+      <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
+      <p class="hint">
+        As listas oficiais, as conferências e o histórico ficam guardados <strong>somente neste
+        navegador</strong> — nunca são enviados ao Firebase. Use <em>Turmas → Exportar backup</em>
+        para levá-los a outro computador.
+      </p>
+
       <div style="display:flex;gap:8px;margin-top:1.5rem">
-        <button class="btn" onclick="A.show('dash')">Cancelar</button>
-        <button class="btn primary" onclick="A.changePassword()">Salvar senha</button>
+        <button class="btn" onclick="A.show('dash')">Voltar ao painel</button>
       </div>
     </div>
   </div>
@@ -374,16 +523,28 @@
 
 <script>
 /* ================================================================
-   CHAMADA DIGITAL v3.0 — Firebase Realtime Database
-   Dados compartilhados em tempo real entre professor e alunos.
+   CHAMADA DIGITAL v4.0
+   - Firebase Realtime Database: registros brutos dos alunos.
+   - localStorage: listas oficiais, conferências e histórico
+     (dados nominais não trafegam pelo banco público).
    ================================================================ */
 
 const TOKEN_WIN  = 120000;  // 2 minutos
 const GRACE_WINS = 1;
 const WARN_MIN   = 10;
-const STOR_PWD   = 'cd_password';
-const STOR_DEVID = 'cd_devid';
-const STOR_CFG   = 'cd_firebase_config';
+const STOR_PWD      = 'cd_password';
+const STOR_DEVID    = 'cd_devid';
+const STOR_CFG      = 'cd_firebase_config';
+const STOR_TURMAS   = 'cd_turmas_v1';
+const STOR_CURSOS   = 'cd_cursos_v1';
+const STOR_CHAMADAS = 'cd_chamadas_v1';
+const STOR_SYNC     = 'cd_synckey';
+
+const CURSOS_PADRAO = [
+  'Publicidade e Propaganda',
+  'Jornalismo',
+  'Outro curso'
+];
 
 let db = null;  // Firebase database instance
 
@@ -410,16 +571,27 @@ function validToken(tok, sid, sec) {
 function uid()        { return Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
 function rndSecret()  { return Array.from({length:18},()=>(Math.random()*36|0).toString(36)).join(''); }
 function fmt(ts)      { return new Date(ts).toLocaleString('pt-BR'); }
+function fmtData(ts)  { return new Date(ts).toLocaleDateString('pt-BR'); }
+function fmtHora(ts)  { return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtCd(ms)    { const s=Math.ceil(ms/1000); return Math.floor(s/60)+':'+(s%60+'').padStart(2,'0'); }
 function fmtRem(ms) {
   if (ms <= 0) return '0:00';
   const s = Math.ceil(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sc = s%60;
   return h > 0 ? h+'h '+m+'min' : m+':'+(sc+'').padStart(2,'0');
 }
+function esc(s) {
+  return String(s==null?'':s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+/** Para ids interpolados dentro de onclick="A.fn('...')": neutraliza aspas e barras. */
+function escJs(s) {
+  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+                             .replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
 
-/* ---- localStorage (só para dados locais: senha, devid, config) ---- */
+/* ---- localStorage ---- */
 function lGet(k)    { try { const v=localStorage.getItem(k); return v?JSON.parse(v):null; } catch{return null;} }
-function lSet(k,v)  { try { localStorage.setItem(k,JSON.stringify(v)); } catch(_){} }
+function lSet(k,v)  { try { localStorage.setItem(k,JSON.stringify(v)); return true; } catch(_){ return false; } }
 function lDel(k)    { try { localStorage.removeItem(k); } catch(_){} }
 
 /* ---- Firebase helpers (async) ---- */
@@ -432,6 +604,304 @@ async function fbUpdate(path, val) { await db.ref(path).update(val); }
 async function fbPush(path, val) { return await db.ref(path).push(val); }
 
 /* ================================================================
+   NORMALIZAÇÃO E COMPARAÇÃO DE NOMES
+   ================================================================ */
+const PARTICULAS = new Set(['de','da','do','dos','das','e','del','di','du','van','von','la','le']);
+
+function normNome(s) {
+  s = String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  s = s.replace(/[^A-Za-z\s]/g, ' ').toLowerCase();
+  return s.replace(/\s+/g, ' ').trim();
+}
+function tokensNome(s) {
+  return normNome(s).split(' ').filter(t => t && !PARTICULAS.has(t));
+}
+/** `a` é subsequência (na mesma ordem) de `b`? Trata iniciais: "j" casa com "joao". */
+function subsequencia(a, b) {
+  let i = 0;
+  for (const t of b) {
+    if (i >= a.length) break;
+    const x = a[i];
+    if (x === t || (x.length === 1 && t[0] === x)) i++;
+  }
+  return i === a.length;
+}
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (a.length < b.length) { const t = a; a = b; b = t; }
+  let prev = Array.from({length:b.length+1}, (_,i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/**
+ * Classifica um nome digitado contra a lista oficial da turma.
+ * Devolve { tipo, alunos } onde tipo é:
+ *   'exato'      → nome completo bate; entra como presente automaticamente
+ *   'aproximado' → o que foi digitado é parte inequívoca de um único nome oficial
+ *   'sugestao'   → parecido com um único nome (erro de digitação); precisa de confirmação
+ *   'ambiguo'    → bate com mais de um aluno; precisa de escolha manual
+ *   'ausente'    → nenhum candidato
+ */
+function classificarNome(entrada, alunos) {
+  const et = tokensNome(entrada);
+  if (!et.length) return { tipo:'ausente', alunos:[] };
+  const en = et.join(' ');
+
+  // 1. Igualdade exata do nome completo normalizado
+  const exatos = alunos.filter(a => tokensNome(a.nome).join(' ') === en);
+  if (exatos.length === 1) return { tipo:'exato', alunos:exatos };
+  if (exatos.length > 1)   return { tipo:'ambiguo', alunos:exatos };
+
+  // 2. Subsequência: nome abreviado ("Ana Marques", "Maria E. Teixeira de Lima").
+  //    Para valer como presença automática exige três coisas ao mesmo tempo:
+  //    candidato único na turma, dois nomes de verdade (não só iniciais) e
+  //    ancoragem nas duas pontas — mesmo primeiro nome E mesmo último sobrenome.
+  //    Sem a âncora final, "Maria Santos" casaria com "Maria Eduarda Santos Moreno".
+  const cheios = et.filter(t => t.length >= 3).length;
+  const subs = alunos.filter(a => subsequencia(et, tokensNome(a.nome)));
+  if (subs.length > 1) return { tipo:'ambiguo', alunos:subs };
+  if (subs.length === 1) {
+    const at = tokensNome(subs[0].nome);
+    const ancorado = et[0] === at[0] && et[et.length-1] === at[at.length-1];
+    return (et.length >= 2 && cheios >= 2 && ancorado)
+      ? { tipo:'aproximado', alunos:subs }
+      : { tipo:'sugestao',   alunos:subs };
+  }
+
+  // 3. Erro de digitação: distância pequena no nome completo
+  const tol = en.length >= 20 ? 3 : en.length >= 12 ? 2 : 1;
+  const perto = alunos
+    .map(a => ({ a, d: levenshtein(en, tokensNome(a.nome).join(' ')) }))
+    .filter(x => x.d <= tol)
+    .sort((x, y) => x.d - y.d);
+  if (perto.length === 1) return { tipo:'sugestao', alunos:[perto[0].a] };
+  if (perto.length > 1) {
+    if (perto[0].d < perto[1].d) return { tipo:'sugestao', alunos:[perto[0].a] };
+    return { tipo:'ambiguo', alunos: perto.map(x => x.a) };
+  }
+
+  // 4. Último recurso: nomes fora de ordem ("Silva, Ana Carla").
+  //    Nunca vira presença automática — sempre passa pela sua confirmação.
+  const conj = alunos.filter(a => {
+    const at = tokensNome(a.nome);
+    return et.length >= 2 && et.every(t => at.includes(t));
+  });
+  if (conj.length === 1) return { tipo:'sugestao', alunos:conj };
+  if (conj.length > 1)   return { tipo:'ambiguo',    alunos:conj };
+
+  return { tipo:'ausente', alunos:[] };
+}
+
+/**
+ * Cruza os registros da sessão com a lista oficial da turma.
+ * `resolucoes` mapeia chave-do-registro → id do aluno, ou '__nenhum__'.
+ * Regra de ouro: só vira presente quem foi casado com segurança ou confirmado à mão.
+ */
+function conciliar(registros, alunos, resolucoes) {
+  resolucoes = resolucoes || {};
+  const porAluno = new Map();   // alunoId → [registros]
+  const pendentes = [];         // precisam de decisão do professor
+
+  for (const r of registros) {
+    const manual = resolucoes[r.key];
+    if (manual === '__nenhum__') { pendentes.push({ ...r, tipo:'ausente', sugestoes:[], manual:true }); continue; }
+    if (manual) {
+      const a = alunos.find(x => x.id === manual);
+      if (a) { if (!porAluno.has(a.id)) porAluno.set(a.id, []); porAluno.get(a.id).push({ ...r, modo:'manual' }); continue; }
+    }
+    const c = classificarNome(r.nome, alunos);
+    if (c.tipo === 'exato' || c.tipo === 'aproximado') {
+      const a = c.alunos[0];
+      if (!porAluno.has(a.id)) porAluno.set(a.id, []);
+      porAluno.get(a.id).push({ ...r, modo:c.tipo });
+    } else {
+      pendentes.push({ ...r, tipo:c.tipo, sugestoes:c.alunos });
+    }
+  }
+
+  const presentes = [], duplicidades = [];
+  for (const [aid, regs] of porAluno) {
+    const aluno = alunos.find(x => x.id === aid);
+    regs.sort((x, y) => x.ts - y.ts);
+    presentes.push({ aluno, registro: regs[0], modo: regs[0].modo });
+    if (regs.length > 1) duplicidades.push({ aluno, registros: regs });
+  }
+  presentes.sort((x, y) => x.aluno.nome.localeCompare(y.aluno.nome, 'pt-BR'));
+
+  const idsPresentes = new Set(presentes.map(p => p.aluno.id));
+  const faltosos = alunos.filter(a => !idsPresentes.has(a.id))
+                         .sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+
+  return { presentes, faltosos, naoIdentificados: pendentes, duplicidades };
+}
+
+/* ================================================================
+   LISTAS OFICIAIS — sincronizadas pelo Firebase
+
+   Ficam sob cd_priv/<chave de sincronização>/. A chave é um segredo
+   longo, gerado uma vez e guardado neste navegador; colá-la em outro
+   computador traz turmas, cursos e histórico junto.
+
+   As regras do banco (ver README) impedem listar os filhos de cd_priv,
+   então só quem tem a chave exata alcança esses dados. O localStorage
+   passa a ser cópia de trabalho: o app funciona sem rede e ressincroniza
+   quando ela volta.
+   ================================================================ */
+const CACHE = { turmas:[], cursos:null, chamadas:[], carregado:false };
+
+function getSyncKey() {
+  let k = lGet(STOR_SYNC);
+  if (!k) {
+    k = Array.from({length:32}, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[(Math.random()*36)|0]).join('');
+    lSet(STOR_SYNC, k);
+  }
+  return k;
+}
+function setSyncKey(k) { lSet(STOR_SYNC, String(k).trim().replace(/[^a-z0-9]/gi,'').toLowerCase()); }
+function privPath(sub) { return 'cd_priv/' + getSyncKey() + (sub ? '/' + sub : ''); }
+
+/** Firebase devolve arrays esparsos como objeto; normaliza sempre para lista. */
+function comoLista(v) {
+  if (!v) return [];
+  return Array.isArray(v) ? v.filter(Boolean) : Object.values(v).filter(Boolean);
+}
+
+function getTurmas()   { return CACHE.turmas; }
+function getTurma(id)  { return CACHE.turmas.find(t => t.id === id) || null; }
+function getCursos()   { return (CACHE.cursos && CACHE.cursos.length) ? CACHE.cursos : CURSOS_PADRAO.slice(); }
+function getChamadas() { return CACHE.chamadas; }
+
+/** Lê do Firebase; se a rede falhar, cai para a cópia local sem travar o app. */
+async function carregarDados() {
+  const local = {
+    turmas:   lGet(STOR_TURMAS)   || [],
+    cursos:   lGet(STOR_CURSOS)   || null,
+    chamadas: lGet(STOR_CHAMADAS) || []
+  };
+  try {
+    const remoto = await fbGet(privPath()) || {};
+    CACHE.turmas   = comoLista(remoto.turmas);
+    CACHE.cursos   = comoLista(remoto.cursos);
+    CACHE.chamadas = comoLista(remoto.chamadas);
+    // Primeira sincronização: sobe o que já existia só neste navegador.
+    if (!CACHE.turmas.length && local.turmas.length)     await salvarTurmas(local.turmas);
+    if (!CACHE.cursos.length && local.cursos)            await salvarCursosLista(local.cursos);
+    if (!CACHE.chamadas.length && local.chamadas.length) await salvarChamadas(local.chamadas);
+    CACHE.carregado = true;
+    return { ok:true };
+  } catch(e) {
+    CACHE.turmas = local.turmas; CACHE.cursos = local.cursos; CACHE.chamadas = local.chamadas;
+    CACHE.carregado = false;
+    return { ok:false, erro:e.message };
+  }
+}
+
+async function salvarTurmas(t) {
+  CACHE.turmas = t; lSet(STOR_TURMAS, t);
+  await fbSet(privPath('turmas'), t);
+}
+async function salvarCursosLista(c) {
+  CACHE.cursos = c; lSet(STOR_CURSOS, c);
+  await fbSet(privPath('cursos'), c);
+}
+async function salvarChamadas(ch) {
+  CACHE.chamadas = ch; lSet(STOR_CHAMADAS, ch);
+  await fbSet(privPath('chamadas'), ch);
+}
+
+/**
+ * Interpreta o texto colado do sistema da UNI7.
+ * Aceita vários blocos de turma seguidos, ou uma lista simples de nomes.
+ */
+function parseListaUNI7(texto) {
+  const cru = texto.split(/\r?\n/);
+  const limpa = l => l.replace(/^[\s*\u2022\u00b7\-\u2013\u2014]+/, '').replace(/^\d+[\.\)]\s*/, '')
+                      .replace(/[\u2713\u2714]\s*$/, '').trim();
+  const linhas = cru.map(limpa);
+
+  // Uma linha é cabeçalho de turma se logo adiante vier "Código:" ou "Turma:".
+  const ehCabecalho = i => {
+    let vistos = 0;
+    for (let j = i + 1; j < linhas.length && vistos < 4; j++) {
+      if (!linhas[j]) continue;
+      vistos++;
+      if (/^(C[óo]digo|Turma)\s*:/i.test(linhas[j])) return true;
+      if (/\(\d{4,}\)\s*$/.test(linhas[j])) return false;
+    }
+    return false;
+  };
+
+  const turmas = [];
+  let atual = null;
+  const novaTurma = (disciplina, cursoRotulo) => {
+    atual = { id:'', disciplina:disciplina||'', cursoRotulo:cursoRotulo||'',
+              codigo:'', turma:'', cargaHoraria:null, alunos:[] };
+    turmas.push(atual);
+    return atual;
+  };
+
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
+    if (!l) continue;
+    let m;
+
+    if (m = l.match(/^C[óo]digo\s*:\s*(.+)$/i))      { (atual||novaTurma()).codigo = m[1].trim(); continue; }
+    if (m = l.match(/^Turma\s*:\s*(.+)$/i))          { (atual||novaTurma()).turma  = m[1].trim(); continue; }
+    if (m = l.match(/^Carga\s*Hor[áa]ria\s*:\s*(\d+)/i)) { (atual||novaTurma()).cargaHoraria = +m[1]; continue; }
+    if (/^Alunos?\s*(\(\s*\d+\s*\))?\s*:?\s*$/i.test(l)) continue;
+
+    // "Nome Completo (56055432)"
+    if (m = l.match(/^(.+?)\s*\(\s*(\d{4,})\s*\)$/)) {
+      (atual || novaTurma()).alunos.push({ nome:m[1].trim(), matricula:m[2] });
+      continue;
+    }
+    // "56055432 Nome Completo"  |  "56055432;Nome"  |  "56055432,Nome"
+    if (m = l.match(/^(\d{6,})[\s;,\t]+(.+)$/)) {
+      (atual || novaTurma()).alunos.push({ nome:m[2].trim(), matricula:m[1] });
+      continue;
+    }
+    // "Nome;56055432"
+    if (m = l.match(/^(.+?)[;,\t]\s*(\d{6,})$/)) {
+      (atual || novaTurma()).alunos.push({ nome:m[1].trim(), matricula:m[2] });
+      continue;
+    }
+
+    if (ehCabecalho(i)) {
+      const mm = l.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+      novaTurma(mm ? mm[1].trim() : l, mm ? mm[2].trim() : '');
+      continue;
+    }
+    // Nome solto, sem matrícula
+    if (/[A-Za-zÀ-ÿ]/.test(l)) (atual || novaTurma()).alunos.push({ nome:l, matricula:'' });
+  }
+
+  // Consolida: id, deduplicação e ids internos de aluno
+  const out = [];
+  for (const t of turmas) {
+    if (!t.alunos.length) continue;
+    t.id = (t.codigo && t.turma) ? (t.codigo + '-' + t.turma)
+         : ([normNome(t.disciplina).replace(/\s+/g,'-'), t.turma, t.codigo]
+              .filter(Boolean).join('-') || ('turma-' + uid()));
+    const vistos = new Set();
+    t.alunos = t.alunos.filter(a => {
+      const k = a.matricula || normNome(a.nome);
+      if (vistos.has(k)) return false;
+      vistos.add(k); return true;
+    }).map((a, i) => ({ id: a.matricula || ('n' + i + '-' + normNome(a.nome).replace(/\s+/g,'')),
+                        nome: a.nome, matricula: a.matricula, ordem: i + 1 }));
+    out.push(t);
+  }
+  return out;
+}
+
+/* ================================================================
    IMPRESSÃO DIGITAL DO DISPOSITIVO
    ================================================================ */
 function buildFingerprint() {
@@ -441,7 +911,7 @@ function buildFingerprint() {
     const ctx = cv.getContext('2d');
     ctx.fillStyle='#e8a020'; ctx.fillRect(0,0,240,50);
     ctx.fillStyle='#114488'; ctx.font='15px Arial,sans-serif';
-    ctx.fillText('ChamadaDigital \u2014 UNI7', 4, 32);
+    ctx.fillText('ChamadaDigital — UNI7', 4, 32);
     ctx.fillStyle='rgba(90,200,60,.75)'; ctx.font='11px "Times New Roman",serif';
     ctx.fillText('presenca2025', 6, 14);
     parts.push(cv.toDataURL());
@@ -478,14 +948,18 @@ const A = {
   _lastToken: '',
   _attListener: null,
   _devId: null,
+  _conf: null,       // { sess, turma, registros, resolucoes, resultado }
+  _confAba: 'faltosos',
+  _impPrev: null,
+  _encerrando: false,
 
   /* ---- Inicialização ---- */
   async init() {
     this._devId = getDeviceId();
 
-   const savedCfg = lGet(STOR_CFG);
+    const savedCfg = lGet(STOR_CFG);
 
-const cfg = savedCfg || {
+    const cfg = savedCfg || {
       apiKey:            "AIzaSyBuIS-MbVeZd4i7ty3wv_dJNhpqNdOVqW8",
       authDomain:        "chamada-2901e.firebaseapp.com",
       databaseURL:       "https://chamada-2901e-default-rtdb.firebaseio.com",
@@ -493,7 +967,7 @@ const cfg = savedCfg || {
       storageBucket:     "chamada-2901e.firebasestorage.app",
       messagingSenderId: "960322035637",
       appId:             "1:960322035637:web:b66c09a30b9bf7c44583fc"
-};
+    };
 
     try {
       if (!firebase.apps.length) firebase.initializeApp(cfg);
@@ -506,6 +980,8 @@ const cfg = savedCfg || {
     }
     document.getElementById("loading").classList.add("off");
 
+    this.montarCursos();
+
     const p = new URLSearchParams(location.search);
     const s = p.get("s"), t = p.get("t");
     if (s && t) {
@@ -516,7 +992,6 @@ const cfg = savedCfg || {
       this.show("login");
     }
   },
-
 
   /* ---- Configuração Firebase ---- */
   saveConfig() {
@@ -536,7 +1011,8 @@ const cfg = savedCfg || {
   },
 
   resetConfig() {
-    if (!confirm('Remover a configuração do Firebase? O sistema voltará à tela de setup.')) return;
+    if (!confirm('Remover a configuração salva do Firebase?\n\nO app volta a usar o projeto padrão embutido no arquivo — ' +
+                 'não vai para a tela de setup. Para apontar para outro projeto, edite o objeto cfg em A.init().')) return;
     lDel(STOR_CFG);
     location.reload();
   },
@@ -545,8 +1021,10 @@ const cfg = savedCfg || {
   show(v) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('on'));
     document.getElementById('v'+v).classList.add('on');
-    if (v === 'dash')     this.loadDash();
+    if (v === 'dash')     { this.montarTurmaSelect(); this.loadDash(); }
     if (v === 'settings') this._fillSettings();
+    if (v === 'turmas')   this.renderTurmas();
+    if (v === 'hist')     { this.montarHistFiltro(); this.renderHist(); }
   },
 
   /* ---- Login ---- */
@@ -556,8 +1034,12 @@ const cfg = savedCfg || {
     if (pwd === stored) {
       this.auth = true;
       document.getElementById('pwd').value = '';
+      document.getElementById('lerr').textContent = 'Sincronizando turmas…';
+      const r = await carregarDados();
       document.getElementById('lerr').textContent = '';
       this.show('dash');
+      if (!r.ok) alert('Não consegui ler as turmas do banco (' + r.erro +
+        ').\nEstou usando a cópia local deste navegador; alterações sobem quando a conexão voltar.');
     } else {
       document.getElementById('lerr').textContent = 'Senha incorreta.';
     }
@@ -575,7 +1057,52 @@ const cfg = savedCfg || {
 
   _fillSettings() {
     const cfg = lGet(STOR_CFG) || {};
-    document.getElementById('cfginfo').textContent = cfg.projectId || '—';
+    document.getElementById('cfginfo').textContent = cfg.projectId || 'chamada-2901e (padrão)';
+    document.getElementById('cursosTxt').value = getCursos().join('\n');
+    document.getElementById('syncKey').value = getSyncKey();
+    document.getElementById('syncMsg').textContent = CACHE.carregado
+      ? getTurmas().length + ' turma(s) sincronizada(s) com o banco.'
+      : 'Sem sincronização nesta sessão — usando a cópia local.';
+  },
+
+  copiarChave() {
+    const k = getSyncKey();
+    const msg = document.getElementById('syncMsg');
+    navigator.clipboard.writeText(k)
+      .then(() => { msg.textContent = 'Chave copiada. Guarde-a em lugar seguro.'; })
+      .catch(() => prompt('Copie a chave:', k));
+  },
+
+  async trocarChave() {
+    const nova = prompt('Cole a chave de sincronização do outro computador.\n\n' +
+      'Atenção: as turmas deste navegador deixam de aparecer (elas continuam salvas na chave antiga).');
+    if (!nova || !nova.trim()) return;
+    const limpa = String(nova).trim().replace(/[^a-z0-9]/gi,'').toLowerCase();
+    if (limpa.length < 16) { alert('Chave inválida — esperava ao menos 16 caracteres.'); return; }
+    setSyncKey(limpa);
+    lDel(STOR_TURMAS); lDel(STOR_CURSOS); lDel(STOR_CHAMADAS);
+    CACHE.turmas = []; CACHE.cursos = null; CACHE.chamadas = [];
+    const r = await carregarDados();
+    this.montarCursos();
+    this._fillSettings();
+    alert(r.ok ? `Chave trocada. ${getTurmas().length} turma(s) e ${getChamadas().length} chamada(s) carregadas.`
+               : 'Chave trocada, mas o banco não respondeu: ' + r.erro);
+  },
+
+  async salvarCursos() {
+    const lista = document.getElementById('cursosTxt').value
+      .split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if (!lista.length) { alert('Informe ao menos um curso.'); return; }
+    try { await salvarCursosLista(lista); } catch(e) { alert('Não gravou no banco: ' + e.message); return; }
+    this.montarCursos();
+    alert('Lista de cursos atualizada.');
+  },
+
+  montarCursos() {
+    const sel = document.getElementById('cur');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecione seu curso</option>' +
+      getCursos().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   },
 
   changePassword() {
@@ -587,17 +1114,151 @@ const cfg = savedCfg || {
     document.getElementById('seterr').textContent = '';
     document.getElementById('npwd').value = document.getElementById('npwd2').value = '';
     alert('Senha alterada!');
-    this.show('dash');
   },
 
-  /* ---- Dashboard ---- */
+  /* ================================================================
+     TURMAS
+     ================================================================ */
+  montarTurmaSelect() {
+    const sel = document.getElementById('turmaSel');
+    const turmas = getTurmas();
+    sel.innerHTML = turmas.map(t =>
+        `<option value="${esc(t.id)}">${esc(t.disciplina || t.turma)} — ${esc(t.turma)} (${t.alunos.length} alunos)</option>`
+      ).join('') + '<option value="__livre__">— sem turma vinculada (texto livre) —</option>';
+    if (!turmas.length) sel.value = '__livre__';
+    this.onTurmaChange();
+  },
+
+  onTurmaChange() {
+    const v = document.getElementById('turmaSel').value;
+    document.getElementById('livreWrap').style.display = (v === '__livre__') ? 'block' : 'none';
+  },
+
+  renderTurmas() {
+    const el = document.getElementById('tlist');
+    const turmas = getTurmas();
+    if (!turmas.length) { el.innerHTML = '<span class="hint">Nenhuma turma cadastrada.</span>'; return; }
+    el.innerHTML = turmas.map(t => `
+      <div class="lrow">
+        <div>
+          <div style="font-weight:500">${esc(t.disciplina || '(sem disciplina)')}</div>
+          <div class="hint">${esc(t.turma)}${t.codigo ? ' · ' + esc(t.codigo) : ''}${t.cargaHoraria ? ' · ' + t.cargaHoraria + 'h' : ''} · ${t.alunos.length} alunos</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn sm" onclick="A.verTurma('${escJs(t.id)}')">Ver</button>
+          <button class="btn sm danger" onclick="A.removerTurma('${escJs(t.id)}')">Remover</button>
+        </div>
+      </div>`).join('');
+  },
+
+  verTurma(id) {
+    const t = getTurma(id);
+    if (!t) return;
+    alert(`${t.disciplina} — ${t.turma}\n${t.alunos.length} alunos\n\n` +
+      t.alunos.map((a,i) => `${(i+1+'').padStart(2)}. ${a.nome}${a.matricula ? '  ('+a.matricula+')' : ''}`).join('\n'));
+  },
+
+  async removerTurma(id) {
+    const t = getTurma(id);
+    if (!t) return;
+    if (!confirm(`Remover a turma "${t.disciplina} — ${t.turma}" e seus ${t.alunos.length} alunos?\nAs chamadas já salvas no histórico não são apagadas.`)) return;
+    salvarTurmas(getTurmas().filter(x => x.id !== id))
+      .then(() => this.renderTurmas())
+      .catch(e => alert('Removida só neste navegador — o banco não respondeu: ' + e.message));
+  },
+
+  previewImport() {
+    const txt = document.getElementById('impTxt').value;
+    const err = document.getElementById('imperr');
+    const box = document.getElementById('impPrev');
+    err.textContent = '';
+    if (!txt.trim()) { err.textContent = 'Cole a lista antes de analisar.'; box.innerHTML = ''; return; }
+
+    let novas;
+    try { novas = parseListaUNI7(txt); }
+    catch(e) { err.textContent = 'Não consegui interpretar a lista: ' + e.message; return; }
+
+    if (!novas.length) { err.textContent = 'Nenhum aluno reconhecido no texto colado.'; box.innerHTML = ''; return; }
+    this._impPrev = novas;
+
+    const existentes = getTurmas();
+    box.innerHTML = `
+      <div class="sechead">Confira antes de gravar — ${novas.length} turma(s), ${novas.reduce((s,t)=>s+t.alunos.length,0)} aluno(s)</div>
+      ${novas.map(t => {
+        const jaTem = existentes.some(x => x.id === t.id);
+        const semMat = t.alunos.filter(a => !a.matricula).length;
+        return `<div class="lrow">
+          <div>
+            <div style="font-weight:500">${esc(t.disciplina || '(sem disciplina)')} ${jaTem?'<span class="badge badge-amber">substitui existente</span>':'<span class="badge badge-green">nova</span>'}</div>
+            <div class="hint">${esc(t.turma || '—')}${t.codigo?' · '+esc(t.codigo):''} · <strong>${t.alunos.length} alunos</strong>${semMat?` · ${semMat} sem matrícula`:''}</div>
+            <div class="hint" style="margin-top:3px">${esc(t.alunos.slice(0,3).map(a=>a.nome).join(' · '))}${t.alunos.length>3?' …':''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="btn primary" style="margin-top:12px" onclick="A.confirmImport()">Gravar ${novas.length} turma(s)</button>`;
+  },
+
+  async confirmImport() {
+    const novas = this._impPrev;
+    if (!novas || !novas.length) return;
+    const mapa = new Map(getTurmas().map(t => [t.id, t]));
+    for (const t of novas) mapa.set(t.id, t);
+    try { await salvarTurmas([...mapa.values()]); }
+    catch(e) { alert('Não foi possível gravar no banco: ' + e.message); return; }
+    document.getElementById('impTxt').value = '';
+    document.getElementById('impPrev').innerHTML = '';
+    this._impPrev = null;
+    this.renderTurmas();
+    alert(`${novas.length} turma(s) gravada(s).`);
+  },
+
+  exportBackup() {
+    const dados = { versao:1, exportadoEm:new Date().toISOString(),
+                    chave:getSyncKey(),
+                    turmas:getTurmas(), cursos:getCursos(), chamadas:getChamadas() };
+    const blob = new Blob([JSON.stringify(dados, null, 1)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chamada-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+  },
+
+  importBackup(input) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = async () => {
+      try {
+        const d = JSON.parse(fr.result);
+        if (!d.turmas) throw new Error('arquivo sem o campo "turmas"');
+        if (!confirm(`Importar ${d.turmas.length} turma(s) e ${(d.chamadas||[]).length} chamada(s) do backup?\nTurmas com o mesmo código serão substituídas.`)) return;
+        const mapa = new Map(getTurmas().map(t => [t.id, t]));
+        for (const t of d.turmas) mapa.set(t.id, t);
+        await salvarTurmas([...mapa.values()]);
+        if (d.cursos && d.cursos.length) await salvarCursosLista(d.cursos);
+        if (d.chamadas && d.chamadas.length) {
+          const ch = new Map(getChamadas().map(c => [c.sid, c]));
+          for (const c of d.chamadas) ch.set(c.sid, c);
+          await salvarChamadas([...ch.values()]);
+        }
+        this.montarCursos();
+        this.renderTurmas();
+        alert('Backup importado.');
+      } catch(e) { alert('Arquivo inválido: ' + e.message); }
+      finally { input.value = ''; }
+    };
+    fr.readAsText(f);
+  },
+
+  /* ================================================================
+     DASHBOARD E SESSÕES
+     ================================================================ */
   async loadDash() {
     const el = document.getElementById('slist');
     el.innerHTML = '<span class="hint">Carregando…</span>';
     const sessions = await fbGet('cd_sessions') || {};
     const now = Date.now();
 
-    // Expirar sessões antigas no Firebase
     for (const s of Object.values(sessions)) {
       if (s.active && s.expiresAt && now > s.expiresAt) {
         await fbUpdate('cd_sessions/' + s.id, { active: false, endedAt: s.expiresAt, autoExp: true });
@@ -621,19 +1282,21 @@ const cfg = savedCfg || {
       } else {
         badge = `<span class="badge badge-gray">${s.autoExp?'Expirada':'Encerrada'}</span>`;
       }
+      const temTurma = s.turmaId && getTurma(s.turmaId);
       html += `
         <div style="display:flex;align-items:flex-start;justify-content:space-between;
                     gap:10px;padding:10px 0;border-bottom:.5px solid var(--border)">
           <div>
-            <div style="font-size:13px;font-weight:500">${s.course} ${badge}</div>
+            <div style="font-size:13px;font-weight:500">${esc(s.course)} ${badge}</div>
             <div style="font-size:11px;color:var(--text2)">
-              ${s.group||'—'} &middot; ${fmt(s.createdAt)} &middot; ${attCount} presença(s)
+              ${esc(s.group||'—')} &middot; ${fmt(s.createdAt)} &middot; ${attCount} registro(s)
             </div>
           </div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            ${s.active?`<button class="btn" style="font-size:12px" onclick="A.reopenProj('${s.id}')">Projetar</button>`:''}
-            <button class="btn" style="font-size:12px" onclick="A.viewAtt('${s.id}')">Ver</button>
-            <button class="btn" style="font-size:12px" onclick="A.exportCSV('${s.id}')">CSV</button>
+          <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+            ${s.active?`<button class="btn sm" onclick="A.reopenProj('${s.id}')">Projetar</button>`:''}
+            ${temTurma?`<button class="btn sm blue" onclick="A.abrirConferencia('${s.id}')">Conferir</button>`:''}
+            <button class="btn sm" onclick="A.viewAtt('${s.id}')">Ver</button>
+            <button class="btn sm" onclick="A.exportCSV('${s.id}')">CSV</button>
           </div>
         </div>`;
     }
@@ -642,17 +1305,28 @@ const cfg = savedCfg || {
 
   /* ---- Criar sessão ---- */
   async createSession() {
-    const course  = document.getElementById('course').value.trim();
-    const group   = document.getElementById('group').value.trim();
-    const durMin  = parseInt(document.getElementById('dur').value,10) || 120;
-    if (!course) { document.getElementById('serr').textContent = 'Informe a disciplina.'; return; }
+    const turmaId = document.getElementById('turmaSel').value;
+    let course, group, vincTurma = null;
+
+    if (turmaId && turmaId !== '__livre__') {
+      vincTurma = getTurma(turmaId);
+      if (!vincTurma) { document.getElementById('serr').textContent = 'Turma não encontrada.'; return; }
+      course = vincTurma.disciplina || vincTurma.turma;
+      group  = vincTurma.turma;
+    } else {
+      course = document.getElementById('course').value.trim();
+      group  = document.getElementById('group').value.trim();
+      if (!course) { document.getElementById('serr').textContent = 'Informe a disciplina.'; return; }
+    }
     document.getElementById('serr').textContent = '';
 
+    const durMin    = parseInt(document.getElementById('dur').value,10) || 120;
     const id        = uid();
     const sec       = rndSecret();
     const now       = Date.now();
     const expiresAt = now + durMin * 60000;
-    const sess = { id, course, group, secret:sec, createdAt:now, expiresAt, durMin, active:true };
+    const sess = { id, course, group, secret:sec, createdAt:now, expiresAt, durMin, active:true,
+                   turmaId: vincTurma ? vincTurma.id : '' };
     await fbSet('cd_sessions/' + id, sess);
     this.activeId = id;
     this.show('proj');
@@ -671,16 +1345,25 @@ const cfg = savedCfg || {
   },
 
   async endSession(auto) {
-    if (!this.activeId) return;
-    if (!auto && !confirm('Encerrar a sessão?')) return;
-    await fbUpdate('cd_sessions/' + this.activeId, {
+    if (!this.activeId || this._encerrando) return;
+    if (!auto && !confirm('Encerrar a chamada?')) return;
+    this._encerrando = true;
+    clearInterval(this._timer); this._timer = null;
+    const sid = this.activeId;
+    await fbUpdate('cd_sessions/' + sid, {
       active: false, endedAt: Date.now(), ...(auto ? {autoExp:true} : {})
     });
-    clearInterval(this._timer); this._timer = null;
     this._detachAttListener();
-    this.activeId = null; this._lastToken = '';
-    this.show('dash');
-    if (auto) alert('Sessão expirada automaticamente.\nExporte o CSV antes de sair!');
+    this.activeId = null; this._lastToken = ''; this._encerrando = false;
+
+    const sess = await fbGet('cd_sessions/' + sid);
+    if (sess && sess.turmaId && getTurma(sess.turmaId)) {
+      await this.abrirConferencia(sid);
+      if (auto) alert('A sessão expirou automaticamente. Confira e salve a chamada.');
+    } else {
+      this.show('dash');
+      if (auto) alert('Sessão expirada automaticamente.\nExporte o CSV antes de sair!');
+    }
   },
 
   leaveProj() {
@@ -696,14 +1379,18 @@ const cfg = savedCfg || {
     document.getElementById('pgroup').textContent  = sess.group || '';
     document.getElementById('ptitle').textContent  = sess.course + (sess.group?' — '+sess.group:'');
 
-    // Listener em tempo real para a lista de presentes
     this._detachAttListener();
     this._attListener = db.ref('cd_att/' + this.activeId)
       .on('value', snap => {
         const att = snap.val() ? Object.values(snap.val()) : [];
+        const turma = sess.turmaId ? getTurma(sess.turmaId) : null;
         document.getElementById('acnt').textContent = att.length;
-        document.getElementById('alist').innerHTML  = att.slice().reverse().map(r =>
-          `<div class="att-row"><span style="font-weight:500">${r.matricula}</span> ${r.nome}</div>`
+        document.getElementById('acntlbl').textContent =
+          turma ? 'de ' + turma.alunos.length + ' alunos' : 'registro(s)';
+        document.getElementById('alist').innerHTML = att.slice().reverse().map(r =>
+          `<div class="att-row"><span style="font-weight:500">${esc(r.nome)}</span>` +
+          `${r.curso ? '<br><span style="color:var(--text3)">'+esc(r.curso)+'</span>' :
+            (r.matricula ? '<br><span style="color:var(--text3)">'+esc(r.matricula)+'</span>' : '')}</div>`
         ).join('');
       });
 
@@ -724,7 +1411,6 @@ const cfg = savedCfg || {
     const rem = sess.expiresAt - now;
     if (rem <= 0) { this.endSession(true); return; }
 
-    // Barra de expiração
     const pct = Math.max(0, (rem / (sess.durMin * 60000)) * 100);
     const bar  = document.getElementById('expbar');
     const warn = document.getElementById('expwarn');
@@ -734,7 +1420,6 @@ const cfg = savedCfg || {
     else                         { bar.style.background='var(--green)'; warn.classList.remove('on'); }
     document.getElementById('sexp').textContent = fmtRem(rem);
 
-    // Token rotativo
     const tok       = curToken(sess.id, sess.secret);
     const remaining = TOKEN_WIN - (now % TOKEN_WIN);
     document.getElementById('cdwn').textContent = fmtCd(remaining);
@@ -755,19 +1440,21 @@ const cfg = savedCfg || {
 
   /* ---- Aluno: marcar presença ---- */
   async markAttendance() {
-    const tok = document.getElementById('cin').value.trim().toUpperCase();
-    const mat = document.getElementById('mat').value.trim();
-    const nom = document.getElementById('nom').value.trim();
-    const err = document.getElementById('aerr');
+    const tok   = document.getElementById('cin').value.trim().toUpperCase();
+    const curso = document.getElementById('cur').value;
+    const nom   = document.getElementById('nom').value.trim().replace(/\s+/g,' ');
+    const err   = document.getElementById('aerr');
     err.textContent = '';
 
-    if (!tok || tok.length < 6) { err.textContent = 'Informe o código de 6 caracteres.'; return; }
-    if (!mat)                    { err.textContent = 'Informe sua matrícula.'; return; }
-    if (!nom)                    { err.textContent = 'Informe seu nome completo.'; return; }
+    if (!tok || tok.length < 6)   { err.textContent = 'Informe o código de 6 caracteres.'; return; }
+    if (!curso)                   { err.textContent = 'Selecione seu curso.'; return; }
+    if (!nom)                     { err.textContent = 'Informe seu nome completo.'; return; }
+    if (tokensNome(nom).length < 2) {
+      err.textContent = 'Escreva o nome completo (nome e sobrenome).'; return;
+    }
 
     err.textContent = 'Verificando…';
 
-    // Buscar sessões ativas no Firebase
     const sessions = await fbGet('cd_sessions') || {};
     let found = null;
     for (const s of Object.values(sessions)) {
@@ -781,53 +1468,361 @@ const cfg = savedCfg || {
       return;
     }
 
-    // Buscar presenças já registradas
     const attObj = await fbGet('cd_att/' + found.id) || {};
     const att    = Object.values(attObj);
     const devId  = getDeviceId();
+    const chave  = tokensNome(nom).join(' ');
 
-    if (att.some(r => r.matricula.toLowerCase() === mat.toLowerCase())) {
-      err.textContent = 'Presença já registrada para esta matrícula nesta sessão.';
+    if (att.some(r => tokensNome(r.nome).join(' ') === chave)) {
+      err.textContent = 'Já existe uma presença registrada com este nome nesta aula.';
       return;
     }
     if (att.some(r => r.devId === devId)) {
-      err.textContent = 'Este dispositivo já registrou uma presença nesta sessão.';
+      err.textContent = 'Este dispositivo já registrou uma presença nesta aula.';
       return;
     }
 
-    // Gravar no Firebase
-    await fbPush('cd_att/' + found.id, { matricula:mat, nome:nom, ts:Date.now(), devId });
+    await fbPush('cd_att/' + found.id, { nome:nom, curso:curso, ts:Date.now(), devId });
 
     err.textContent = '';
     document.getElementById('smsg').textContent  = nom + ' — ' + found.course;
     document.getElementById('stime').textContent = fmt(Date.now());
+    document.getElementById('nom').value = '';
     this.show('success');
   },
 
-  /* ---- Ver lista / Exportar CSV ---- */
+  /* ================================================================
+     CONFERÊNCIA
+     ================================================================ */
+  async _lerRegistros(sid) {
+    const obj = await fbGet('cd_att/' + sid) || {};
+    return Object.entries(obj).map(([key, r]) => ({
+      key, nome:r.nome || '', curso:r.curso || '', ts:r.ts || 0,
+      devId:r.devId || '', matricula:r.matricula || ''
+    })).sort((a,b) => a.ts - b.ts);
+  },
+
+  async abrirConferencia(sid) {
+    const sess  = await fbGet('cd_sessions/' + sid);
+    if (!sess) { alert('Sessão não encontrada.'); return; }
+    const turma = sess.turmaId ? getTurma(sess.turmaId) : null;
+    if (!turma) { alert('Esta sessão não está vinculada a nenhuma turma cadastrada.'); return; }
+
+    const salva = getChamadas().find(c => c.sid === sid);
+    this._conf = {
+      sess, turma,
+      registros: await this._lerRegistros(sid),
+      resolucoes: (salva && salva.resolucoes) || {},
+      salva: !!salva
+    };
+    this._confAba = 'faltosos';
+    this.show('conf');
+    this.renderConf();
+  },
+
+  _calcular() {
+    const c = this._conf;
+    c.resultado = conciliar(c.registros, c.turma.alunos, c.resolucoes);
+    return c.resultado;
+  },
+
+  renderConf() {
+    const c = this._conf; if (!c) return;
+    const r = this._calcular();
+
+    document.getElementById('cfTitle').textContent = c.turma.disciplina + ' — ' + c.turma.turma;
+    document.getElementById('cfSub').textContent =
+      fmtData(c.sess.createdAt) + ' · ' + fmtHora(c.sess.createdAt) +
+      (c.sess.endedAt ? ' às ' + fmtHora(c.sess.endedAt) : '') +
+      ' · ' + c.turma.alunos.length + ' alunos na lista oficial' +
+      (c.salva ? ' · já salva no histórico' : '');
+
+    const abas = [
+      ['presentes','Presentes',r.presentes.length,'var(--green-dark)'],
+      ['faltosos','Faltosos',r.faltosos.length,'var(--red-dark)'],
+      ['naoid','Não identificados',r.naoIdentificados.length,'var(--amber-dark)'],
+      ['dup','Duplicidades',r.duplicidades.length,'var(--text2)']
+    ];
+    document.getElementById('cfKpis').innerHTML = abas.map(([k,l,n,cor]) =>
+      `<div class="kpi ${this._confAba===k?'sel':''}" onclick="A.confAba('${k}')">
+         <div class="kpi-n" style="color:${cor}">${n}</div><div class="kpi-l">${l}</div></div>`).join('');
+
+    // Painel de pendências (o que exige decisão do professor)
+    const pend = r.naoIdentificados.filter(p => !c.resolucoes[p.key]);
+    const box  = document.getElementById('cfPend');
+    if (pend.length) {
+      const opts = c.turma.alunos.map(a => `<option value="${esc(a.id)}">${esc(a.nome)}</option>`).join('');
+      box.innerHTML = `
+        <div class="sechead" style="color:var(--amber-dark)">Precisam da sua decisão — ${pend.length}</div>
+        ${pend.map(p => {
+          const sug = p.sugestoes && p.sugestoes.length
+            ? `<div class="hint" style="margin-top:2px">${p.tipo==='ambiguo'?'Corresponde a mais de um aluno':'Parecido com'}: ${esc(p.sugestoes.map(s=>s.nome).join(' · '))}</div>`
+            : '<div class="hint" style="margin-top:2px">Nenhum aluno da lista oficial corresponde.</div>';
+          return `<div class="lrow" style="align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-weight:500">${esc(p.nome)}</div>
+              <div class="hint">${esc(p.curso||'—')} · ${fmtHora(p.ts)}</div>
+              ${sug}
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+              <select class="inp" style="width:auto;max-width:200px;font-size:12px;padding:5px 8px"
+                      onchange="A.resolver('${escJs(p.key)}', this.value)">
+                <option value="">É este aluno…</option>${opts}
+              </select>
+              <button class="btn sm" onclick="A.resolver('${escJs(p.key)}','__nenhum__')">Não é da turma</button>
+            </div>
+          </div>`;
+        }).join('')}`;
+    } else {
+      box.innerHTML = r.naoIdentificados.length
+        ? `<div class="hint">Todos os registros pendentes foram decididos.</div>` : '';
+    }
+
+    // Painel de conferência: presenças aceitas por aproximação, não por igualdade.
+    // Contam como presentes, mas ficam à vista para você derrubar em um clique.
+    const aprox = r.presentes.filter(p => p.modo === 'aproximado');
+    if (aprox.length) {
+      box.innerHTML += `
+        <div class="sechead" style="color:var(--amber-dark);margin-top:14px">
+          Conferir — ${aprox.length} presença(s) aceitas por aproximação
+        </div>
+        <p class="hint" style="margin-bottom:6px">
+          O nome digitado não é igual ao da lista oficial, mas corresponde a um único aluno da turma.
+          Confira se está certo.
+        </p>
+        ${aprox.map(p => `
+          <div class="lrow">
+            <div>
+              <div style="font-weight:500">${esc(p.aluno.nome)}</div>
+              <div class="hint">digitou "${esc(p.registro.nome)}" · ${esc(p.registro.curso||'—')} · ${fmtHora(p.registro.ts)}</div>
+            </div>
+            <button class="btn sm danger" onclick="A.resolver('${escJs(p.registro.key)}','__nenhum__')">Não é este aluno</button>
+          </div>`).join('')}`;
+    }
+
+    this.renderConfLista();
+    document.getElementById('cfMsg').textContent = '';
+  },
+
+  confAba(k) { this._confAba = k; this.renderConf(); },
+
+  renderConfLista() {
+    const c = this._conf, r = c.resultado;
+    const t = document.getElementById('cfListTitle');
+    const el = document.getElementById('cfList');
+
+    if (this._confAba === 'presentes') {
+      t.textContent = 'Presentes — ' + r.presentes.length;
+      el.innerHTML = r.presentes.length ? r.presentes.map(p => `
+        <div class="lrow">
+          <div>
+            <div>${esc(p.aluno.nome)}</div>
+            <div class="hint">${esc(p.registro.curso||'—')} · ${fmtHora(p.registro.ts)} · digitou "${esc(p.registro.nome)}"</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${p.modo==='exato'?'':`<span class="badge ${p.modo==='manual'?'badge-blue':'badge-amber'}">${p.modo==='manual'?'manual':'aproximado'}</span>`}
+            <span class="mono">${esc(p.aluno.matricula||'')}</span>
+          </div>
+        </div>`).join('') : '<span class="hint">Ninguém.</span>';
+
+    } else if (this._confAba === 'faltosos') {
+      t.textContent = 'Faltosos — ' + r.faltosos.length;
+      el.innerHTML = r.faltosos.length ? r.faltosos.map(a => `
+        <div class="lrow">
+          <div>${esc(a.nome)}</div>
+          <span class="mono">${esc(a.matricula||'')}</span>
+        </div>`).join('') : '<span class="hint">Ninguém faltou.</span>';
+
+    } else if (this._confAba === 'naoid') {
+      t.textContent = 'Não identificados — ' + r.naoIdentificados.length;
+      el.innerHTML = r.naoIdentificados.length ? r.naoIdentificados.map(p => `
+        <div class="lrow">
+          <div>
+            <div>${esc(p.nome)}</div>
+            <div class="hint">${esc(p.curso||'—')} · ${fmtHora(p.ts)} · ${
+              p.manual ? 'marcado como fora da turma' :
+              p.tipo==='ambiguo' ? 'corresponde a mais de um aluno' : 'sem correspondência segura'}</div>
+          </div>
+          ${c.resolucoes[p.key] ? `<button class="btn sm" onclick="A.resolver('${escJs(p.key)}','')">Desfazer</button>` : ''}
+        </div>`).join('') : '<span class="hint">Nenhum. Todos os registros foram associados.</span>';
+
+    } else {
+      t.textContent = 'Duplicidades — ' + r.duplicidades.length;
+      el.innerHTML = r.duplicidades.length ? r.duplicidades.map(d => `
+        <div class="lrow">
+          <div>
+            <div>${esc(d.aluno.nome)}</div>
+            <div class="hint">${d.registros.length} registros: ${
+              d.registros.map(x => esc(x.nome)+' ('+fmtHora(x.ts)+')').join(' · ')}</div>
+          </div>
+          <span class="badge badge-gray">contado 1x</span>
+        </div>`).join('') : '<span class="hint">Nenhuma duplicidade.</span>';
+    }
+  },
+
+  resolver(key, valor) {
+    const c = this._conf; if (!c) return;
+    if (valor === '') delete c.resolucoes[key];
+    else c.resolucoes[key] = valor;
+    this.renderConf();
+  },
+
+  _txtFaltosos() {
+    const r = this._conf && this._conf.resultado;
+    return r ? r.faltosos.map(a => a.nome).join('\n') : '';
+  },
+  _txtPresentes() {
+    const r = this._conf && this._conf.resultado;
+    return r ? r.presentes.map(p => p.aluno.nome).join('\n') : '';
+  },
+
+  async _copiar(txt, rotulo) {
+    const msg = document.getElementById('cfMsg');
+    if (!txt) { msg.textContent = 'Nada para copiar.'; return; }
+    try {
+      await navigator.clipboard.writeText(txt);
+      msg.textContent = rotulo + ' copiado(s) para a área de transferência.';
+    } catch(_) {
+      const ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); msg.textContent = rotulo + ' copiado(s).'; }
+      catch(e) { msg.textContent = 'Não foi possível copiar automaticamente.'; prompt('Copie manualmente:', txt); }
+      document.body.removeChild(ta);
+    }
+  },
+  copiarFaltosos()  { this._copiar(this._txtFaltosos(), 'Faltosos'); },
+  copiarPresentes() { this._copiar(this._txtPresentes(), 'Presentes'); },
+
+  exportConfCSV() {
+    const c = this._conf; if (!c) return;
+    const r = c.resultado;
+    const q = s => '"' + String(s==null?'':s).replace(/"/g,'""') + '"';
+    const linhas = [];
+    linhas.push('Situação;Nome oficial;Matrícula;Nome digitado;Curso informado;Horário;Observação');
+    for (const p of r.presentes)
+      linhas.push(['PRESENTE',q(p.aluno.nome),p.aluno.matricula||'',q(p.registro.nome),q(p.registro.curso),
+                   q(fmtHora(p.registro.ts)), p.modo==='exato'?'':q('casamento '+p.modo)].join(';'));
+    for (const a of r.faltosos)
+      linhas.push(['FALTOSO',q(a.nome),a.matricula||'','','','',''].join(';'));
+    for (const p of r.naoIdentificados)
+      linhas.push(['NÃO IDENTIFICADO','','',q(p.nome),q(p.curso),q(fmtHora(p.ts)),
+                   q(p.tipo==='ambiguo'?'corresponde a mais de um aluno':'sem correspondência')].join(';'));
+    for (const d of r.duplicidades)
+      for (const x of d.registros.slice(1))
+        linhas.push(['DUPLICIDADE',q(d.aluno.nome),d.aluno.matricula||'',q(x.nome),q(x.curso),
+                     q(fmtHora(x.ts)),q('registro extra')].join(';'));
+
+    const cab = `Disciplina;${q(c.turma.disciplina)}\nTurma;${q(c.turma.turma)}\n` +
+                `Data;${q(fmtData(c.sess.createdAt))}\nHorário;${q(fmtHora(c.sess.createdAt))}\n` +
+                `Presentes;${r.presentes.length}\nFaltosos;${r.faltosos.length}\n` +
+                `Não identificados;${r.naoIdentificados.length}\nDuplicidades;${r.duplicidades.length}\n\n`;
+    const blob = new Blob(['\uFEFF' + cab + linhas.join('\n')], { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chamada_' + (c.turma.turma||'turma') + '_' +
+                 new Date(c.sess.createdAt).toISOString().slice(0,10) + '.csv';
+    a.click();
+  },
+
+  async salvarChamada() {
+    const c = this._conf; if (!c) return;
+    const r = c.resultado;
+    const reg = {
+      sid: c.sess.id, turmaId: c.turma.id,
+      turma: c.turma.turma, disciplina: c.turma.disciplina,
+      data: c.sess.createdAt, inicio: c.sess.createdAt, fim: c.sess.endedAt || null,
+      totalOficial: c.turma.alunos.length,
+      resolucoes: c.resolucoes,
+      presentes: r.presentes.map(p => ({ id:p.aluno.id, nome:p.aluno.nome, matricula:p.aluno.matricula,
+                                         modo:p.modo, digitado:p.registro.nome,
+                                         curso:p.registro.curso, ts:p.registro.ts })),
+      faltosos: r.faltosos.map(a => ({ id:a.id, nome:a.nome, matricula:a.matricula })),
+      naoIdentificados: r.naoIdentificados.map(p => ({ nome:p.nome, curso:p.curso, ts:p.ts, tipo:p.tipo })),
+      duplicidades: r.duplicidades.map(d => ({ nome:d.aluno.nome, matricula:d.aluno.matricula,
+                                               registros:d.registros.map(x => ({nome:x.nome, ts:x.ts})) })),
+      salvoEm: Date.now()
+    };
+    const todas = getChamadas().slice();
+    const i = todas.findIndex(x => x.sid === reg.sid);
+    if (i >= 0) todas[i] = reg; else todas.push(reg);
+    try { await salvarChamadas(todas); }
+    catch(e) { document.getElementById('cfMsg').textContent = 'Não gravou no banco: ' + e.message; return; }
+    c.salva = true;
+    document.getElementById('cfMsg').textContent =
+      'Chamada salva no histórico (' + r.presentes.length + ' presentes, ' + r.faltosos.length + ' faltosos).';
+  },
+
+  /* ================================================================
+     HISTÓRICO
+     ================================================================ */
+  montarHistFiltro() {
+    const sel = document.getElementById('histFiltro');
+    const ch = getChamadas();
+    const ids = [...new Set(ch.map(c => c.turmaId))];
+    sel.innerHTML = '<option value="">Todas as turmas</option>' + ids.map(id => {
+      const c = ch.find(x => x.turmaId === id);
+      return `<option value="${esc(id)}">${esc(c.disciplina)} — ${esc(c.turma)}</option>`;
+    }).join('');
+  },
+
+  renderHist() {
+    const el = document.getElementById('hlist');
+    const filtro = document.getElementById('histFiltro').value;
+    let ch = getChamadas().slice().sort((a,b) => b.data - a.data);
+    if (filtro) ch = ch.filter(c => c.turmaId === filtro);
+    if (!ch.length) { el.innerHTML = '<span class="hint">Nenhuma chamada salva ainda.</span>'; return; }
+    el.innerHTML = ch.map(c => `
+      <div class="lrow" style="align-items:flex-start">
+        <div>
+          <div style="font-weight:500">${esc(c.disciplina)} — ${esc(c.turma)}</div>
+          <div class="hint">${fmtData(c.data)} · ${fmtHora(c.inicio)}${c.fim?' às '+fmtHora(c.fim):''}</div>
+          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="badge badge-green">${c.presentes.length} presentes</span>
+            <span class="badge badge-red">${c.faltosos.length} faltosos</span>
+            ${c.naoIdentificados.length?`<span class="badge badge-amber">${c.naoIdentificados.length} não ident.</span>`:''}
+            ${c.duplicidades.length?`<span class="badge badge-gray">${c.duplicidades.length} dupl.</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn sm danger" onclick="A.copiarFaltososHist('${escJs(c.sid)}')">Copiar faltosos</button>
+          <button class="btn sm" onclick="A.abrirConferencia('${escJs(c.sid)}')">Abrir</button>
+        </div>
+      </div>`).join('');
+  },
+
+  copiarFaltososHist(sid) {
+    const c = getChamadas().find(x => x.sid === sid);
+    if (!c) return;
+    const txt = c.faltosos.map(a => a.nome).join('\n');
+    navigator.clipboard.writeText(txt)
+      .then(() => alert(c.faltosos.length + ' faltoso(s) copiado(s).'))
+      .catch(() => prompt('Copie manualmente:', txt));
+  },
+
+  /* ---- Ver lista / Exportar CSV bruto ---- */
   async viewAtt(sid) {
-    const attObj  = await fbGet('cd_att/' + sid) || {};
-    const att     = Object.values(attObj);
-    const sess    = await fbGet('cd_sessions/' + sid);
-    const msg     = att.length
-      ? att.map((r,i) => `${i+1}. ${r.matricula} — ${r.nome} (${fmt(r.ts)})`).join('\n')
-      : 'Nenhuma presença registrada.';
-    alert(`Presenças: ${sess.course} — ${sess.group||''}\n\n${msg}`);
+    const att  = await this._lerRegistros(sid);
+    const sess = await fbGet('cd_sessions/' + sid);
+    const msg  = att.length
+      ? att.map((r,i) => `${i+1}. ${r.nome} — ${r.curso || r.matricula || '—'} (${fmt(r.ts)})`).join('\n')
+      : 'Nenhum registro.';
+    alert(`Registros: ${sess.course} — ${sess.group||''}\n\n${msg}`);
   },
 
   async exportCSV(sid) {
     sid = sid || this.activeId;
     if (!sid) return;
-    const attObj = await fbGet('cd_att/' + sid) || {};
-    const att    = Object.values(attObj);
-    const sess   = await fbGet('cd_sessions/' + sid);
-    if (!att.length) { alert('Nenhuma presença para exportar.'); return; }
-    const header = 'Matrícula;Nome;Data/Hora;ID Dispositivo\n';
-    const rows   = att.map(r => `${r.matricula};"${r.nome}";"${fmt(r.ts)}";"${r.devId||'—'}"`).join('\n');
+    const att  = await this._lerRegistros(sid);
+    const sess = await fbGet('cd_sessions/' + sid);
+    if (!att.length) { alert('Nenhum registro para exportar.'); return; }
+    const header = 'Nome;Curso;Data/Hora;ID Dispositivo\n';
+    const rows   = att.map(r =>
+      `"${r.nome}";"${r.curso || r.matricula || ''}";"${fmt(r.ts)}";"${r.devId||'—'}"`).join('\n');
     const blob   = new Blob(['\uFEFF' + header + rows], { type:'text/csv;charset=utf-8' });
     const a      = document.createElement('a');
     a.href       = URL.createObjectURL(blob);
-    a.download   = 'presencas_' + sess.course.replace(/\s+/g,'_')
+    a.download   = 'registros_' + sess.course.replace(/\s+/g,'_')
                  + '_' + new Date(sess.createdAt).toLocaleDateString('pt-BR').replace(/\//g,'-') + '.csv';
     a.click();
   }
