@@ -201,7 +201,8 @@
       <div class="err" id="lerr"></div>
       <button class="btn primary full" onclick="A.login()">Entrar</button>
       <p class="hint" style="text-align:center;margin-top:10px">
-        Senha padrão: <code>chamada</code>
+        <a href="#" onclick="A.configurarNavegador();return false"
+           style="color:var(--text2)">Primeiro acesso neste navegador?</a>
       </p>
       <hr style="border:none;border-top:.5px solid var(--border);margin:16px 0">
       <button class="btn full" onclick="A.show('student')">Sou aluno — registrar presença</button>
@@ -727,6 +728,24 @@ function escJs(s) {
                              .replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
+/* ---- Senha do professor ----
+   O hash fica junto das turmas, em cd_priv/<chave>, e não no navegador. Assim a
+   senha vale em qualquer máquina que tenha a chave — e um navegador que não tem a
+   chave simplesmente não entra, em vez de cair numa senha padrão conhecida. */
+async function hashSenha(pwd, chave) {
+  const txt = 'cdv1:' + chave + ':' + pwd;
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch(_) {
+    // Sem crypto.subtle (contexto não seguro): degrada para um hash fraco, mas
+    // ainda melhor que guardar a senha em claro.
+    let h = '';
+    for (let i = 0; i < 8; i++) h += fnv32(txt + '#' + i).toString(16).padStart(8, '0');
+    return h;
+  }
+}
+
 /* ---- localStorage ---- */
 function lGet(k)    { try { const v=localStorage.getItem(k); return v?JSON.parse(v):null; } catch{return null;} }
 function lSet(k,v)  { try { localStorage.setItem(k,JSON.stringify(v)); return true; } catch(_){ return false; } }
@@ -901,7 +920,7 @@ function conciliar(registros, alunos, resolucoes) {
    passa a ser cópia de trabalho: o app funciona sem rede e ressincroniza
    quando ela volta.
    ================================================================ */
-const CACHE = { turmas:[], cursos:null, chamadas:[], grupos:[], carregado:false };
+const CACHE = { turmas:[], cursos:null, chamadas:[], grupos:[], senhaHash:null, carregado:false };
 
 function getSyncKey() {
   let k = lGet(STOR_SYNC);
@@ -1003,6 +1022,7 @@ async function carregarDados() {
     CACHE.cursos   = comoLista(remoto.cursos);
     CACHE.chamadas = comoLista(remoto.chamadas).map(normChamada);
     CACHE.grupos   = comoLista(remoto.grupos).map(normGrupo);
+    CACHE.senhaHash = remoto.senhaHash || null;
     // Primeira sincronização: sobe o que já existia só neste navegador.
     if (!CACHE.turmas.length && local.turmas.length)     await salvarTurmas(local.turmas);
     if (!CACHE.cursos.length && local.cursos)            await salvarCursosLista(local.cursos);
@@ -1025,6 +1045,10 @@ async function salvarTurmas(t) {
 async function salvarCursosLista(c) {
   CACHE.cursos = c; lSet(STOR_CURSOS, c);
   await fbSet(privPath('cursos'), c);
+}
+async function salvarSenhaHash(h) {
+  CACHE.senhaHash = h;
+  await fbSet(privPath('senhaHash'), h);
 }
 async function salvarGrupos(g) {
   CACHE.grupos = g; lSet(STOR_GRUPOS, g);
@@ -1280,20 +1304,54 @@ const A = {
 
   /* ---- Login ---- */
   async login() {
-    const pwd    = document.getElementById('pwd').value;
-    const stored = lGet(STOR_PWD) || 'chamada';
-    if (pwd === stored) {
-      this.auth = true;
-      document.getElementById('pwd').value = '';
-      document.getElementById('lerr').textContent = 'Sincronizando turmas…';
-      const r = await carregarDados();
-      document.getElementById('lerr').textContent = '';
-      this.show('dash');
-      if (!r.ok) alert('Não consegui ler as turmas do banco (' + r.erro +
-        ').\nEstou usando a cópia local deste navegador; alterações sobem quando a conexão voltar.');
+    const pwd = document.getElementById('pwd').value;
+    const err = document.getElementById('lerr');
+    if (!pwd) { err.textContent = 'Informe a senha.'; return; }
+
+    err.textContent = 'Verificando…';
+    const r = await carregarDados();
+
+    const local = lGet(STOR_PWD);
+    let ok;
+    if (CACHE.senhaHash) {
+      ok = (await hashSenha(pwd, getSyncKey())) === CACHE.senhaHash;
+    } else if (local) {
+      ok = (pwd === local);
+      // migra a senha antiga para o hash sincronizado, na primeira entrada
+      if (ok && r.ok) { try { await salvarSenhaHash(await hashSenha(pwd, getSyncKey())); } catch(_){} }
+    } else if (getTurmas().length) {
+      // navegador já configurado, sem senha definida ainda
+      ok = (pwd === 'chamada');
+      if (ok && r.ok) { try { await salvarSenhaHash(await hashSenha(pwd, getSyncKey())); } catch(_){} }
     } else {
-      document.getElementById('lerr').textContent = 'Senha incorreta.';
+      err.innerHTML = 'Este navegador ainda não está ligado às suas turmas.<br>' +
+                      'Use <a href="#" onclick="A.configurarNavegador();return false">a chave de sincronização</a>.';
+      return;
     }
+
+    if (!ok) { err.textContent = 'Senha incorreta.'; return; }
+
+    this.auth = true;
+    document.getElementById('pwd').value = '';
+    err.textContent = '';
+    this.show('dash');
+    if (!r.ok) alert('Não consegui ler as turmas do banco (' + r.erro +
+      ').\nEstou usando a cópia local deste navegador; alterações sobem quando a conexão voltar.');
+  },
+
+  /** Liga um navegador novo às turmas, colando a chave de sincronização. */
+  async configurarNavegador() {
+    const nova = prompt('Cole a chave de sincronização.\n\n' +
+      'Ela está em Configurações → Chave de sincronização, no navegador que você já usa.');
+    if (!nova || !nova.trim()) return;
+    const limpa = String(nova).trim().replace(/[^a-z0-9]/gi,'').toLowerCase();
+    if (limpa.length < 16) { alert('Chave inválida — esperava ao menos 16 caracteres.'); return; }
+    setSyncKey(limpa);
+    lDel(STOR_TURMAS); lDel(STOR_CURSOS); lDel(STOR_CHAMADAS); lDel(STOR_GRUPOS); lDel(STOR_PWD);
+    CACHE.turmas = []; CACHE.cursos = null; CACHE.chamadas = []; CACHE.grupos = []; CACHE.senhaHash = null;
+    const r = await carregarDados();
+    alert(r.ok ? `Navegador configurado: ${getTurmas().length} turma(s) encontradas. Agora entre com a sua senha.`
+               : 'A chave foi salva, mas o banco não respondeu: ' + r.erro);
   },
 
   logout() {
@@ -1356,15 +1414,19 @@ const A = {
       getCursos().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   },
 
-  changePassword() {
+  async changePassword() {
     const p1 = document.getElementById('npwd').value;
     const p2 = document.getElementById('npwd2').value;
-    if (!p1)       { document.getElementById('seterr').textContent = 'Informe a nova senha.'; return; }
-    if (p1 !== p2) { document.getElementById('seterr').textContent = 'As senhas não coincidem.'; return; }
-    lSet(STOR_PWD, p1);
-    document.getElementById('seterr').textContent = '';
+    const e  = document.getElementById('seterr');
+    if (!p1)          { e.textContent = 'Informe a nova senha.'; return; }
+    if (p1.length < 6){ e.textContent = 'Use ao menos 6 caracteres.'; return; }
+    if (p1 !== p2)    { e.textContent = 'As senhas não coincidem.'; return; }
+    try { await salvarSenhaHash(await hashSenha(p1, getSyncKey())); }
+    catch(err) { e.textContent = 'Não gravou no banco: ' + err.message; return; }
+    lDel(STOR_PWD);
+    e.textContent = '';
     document.getElementById('npwd').value = document.getElementById('npwd2').value = '';
-    alert('Senha alterada!');
+    alert('Senha alterada. Ela vale agora em qualquer navegador que tenha a sua chave de sincronização.');
   },
 
   /* ================================================================
@@ -1682,7 +1744,8 @@ const A = {
         }
         this.montarCursos();
         this.renderTurmas();
-        alert('Backup importado.');
+        this.renderGrupos();
+        alert(`Backup importado: ${getTurmas().length} turma(s), ${getGrupos().length} grupo(s).`);
       } catch(e) { alert('Arquivo inválido: ' + e.message); }
       finally { input.value = ''; }
     };
@@ -1920,17 +1983,20 @@ const A = {
       err.textContent = 'Já existe uma presença registrada com este nome nesta aula.';
       return;
     }
-    if (att.some(r => r.devId === devId)) {
-      err.textContent = 'Este navegador já registrou uma presença nesta aula. ' +
-        'Se você emprestou o aparelho a alguém, abra em uma aba anônima ou avise o professor.';
-      return;
-    }
+    // Mesmo navegador com OUTRO nome não bloqueia mais: pode ser aparelho emprestado,
+    // e barrar um aluno legítimo custa uma presença. O registro entra marcado e o
+    // professor decide na conferência, onde ele aparece num painel próprio.
+    const mesmoAparelho = att.some(r => r.devId === devId);
 
-    await fbPush('cd_att/' + found.id, { nome:nom, curso:curso, ts:Date.now(), devId, modelo:getModeloId() });
+    await fbPush('cd_att/' + found.id, {
+      nome:nom, curso:curso, ts:Date.now(), devId, modelo:getModeloId(),
+      ...(mesmoAparelho ? { mesmoAparelho:true } : {})
+    });
 
     err.textContent = '';
     document.getElementById('smsg').textContent  = nom + ' — ' + found.course;
-    document.getElementById('stime').textContent = fmt(Date.now());
+    document.getElementById('stime').textContent = fmt(Date.now()) +
+      (mesmoAparelho ? ' · segundo registro neste aparelho — o professor vai conferir' : '');
     document.getElementById('nom').value = '';
     this.show('success');
   },
@@ -1942,7 +2008,8 @@ const A = {
     const obj = await fbGet('cd_att/' + sid) || {};
     return Object.entries(obj).map(([key, r]) => ({
       key, nome:r.nome || '', curso:r.curso || '', ts:r.ts || 0,
-      devId:r.devId || '', modelo:r.modelo || '', matricula:r.matricula || ''
+      devId:r.devId || '', modelo:r.modelo || '', matricula:r.matricula || '',
+      mesmoAparelho: !!r.mesmoAparelho
     })).sort((a,b) => a.ts - b.ts);
   },
 
@@ -2045,6 +2112,33 @@ const A = {
               <div class="hint">digitou "${esc(p.registro.nome)}" · ${esc(p.registro.curso||'—')} · ${fmtHora(p.registro.ts)}</div>
             </div>
             <button class="btn sm danger" onclick="A.resolver('${escJs(p.registro.key)}','__nenhum__')">Não é este aluno</button>
+          </div>`).join('')}`;
+    }
+
+    // Registros vindos do mesmo aparelho, com nomes diferentes.
+    const porDev = new Map();
+    for (const reg of c.registros) {
+      if (!reg.devId) continue;
+      if (!porDev.has(reg.devId)) porDev.set(reg.devId, []);
+      porDev.get(reg.devId).push(reg);
+    }
+    const compartilhados = [...porDev.values()].filter(rs =>
+      rs.length > 1 && new Set(rs.map(x => tokensNome(x.nome).join(' '))).size > 1);
+    if (compartilhados.length) {
+      box.innerHTML += `
+        <div class="sechead" style="color:var(--amber-dark);margin-top:14px">
+          Mesmo aparelho — ${compartilhados.length} caso(s)
+        </div>
+        <p class="hint" style="margin-bottom:6px">
+          Dois ou mais alunos registraram presença pelo mesmo navegador. Pode ser aparelho
+          emprestado — ou alguém registrando por um colega ausente. Nenhum foi bloqueado.
+        </p>
+        ${compartilhados.map(rs => `
+          <div class="lrow">
+            <div>
+              <div style="font-weight:500">${esc(rs.map(x => x.nome).join('  ·  '))}</div>
+              <div class="hint">${rs.map(x => fmtHora(x.ts)).join(' · ')}</div>
+            </div>
           </div>`).join('')}`;
     }
 

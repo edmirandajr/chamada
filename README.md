@@ -162,14 +162,19 @@ A versão atual não pede documento nenhum, então o problema não volta a acont
 ## Configurações
 
 - **Cursos** do formulário do aluno: lista editável, um por linha.
-- **Senha do professor**: padrão `chamada`, guardada apenas neste navegador.
+- **Senha do professor**: guardada como hash junto das turmas, não no navegador. Na primeira
+  entrada após a atualização ainda vale `chamada`, e o app grava o hash; troque em seguida.
 - **Firebase**: o projeto padrão está embutido em `A.init()`; para trocar, edite o objeto `cfg`.
 
 ## Limitações conhecidas
 
-- O bloqueio de registro duplicado é por navegador, não por aparelho: quem limpar os dados do
-  site ou abrir uma aba anônima consegue registrar de novo. A duplicidade continua sendo pega no
-  cruzamento com a lista oficial, que é onde ela importa.
+- Registrar duas vezes com o **mesmo nome** na mesma aula é bloqueado. Dois nomes **diferentes**
+  pelo mesmo navegador não são: podem ser aparelho emprestado. O segundo registro entra marcado e
+  aparece num painel próprio na conferência, para você decidir.
+- A senha do professor fica como hash em `cd_priv/<chave>/senhaHash`, então vale em qualquer
+  navegador que tenha a chave. Um navegador sem a chave não entra no painel — não existe mais
+  senha padrão. Isso barra quem tem só o link do app, mas não impede quem saiba usar a API do
+  Firebase direto: `cd_sessions` continua público por necessidade.
 - O Firebase não guarda listas vazias: uma chamada sem "não identificados" volta do banco sem
   esse campo. Toda leitura passa por `comoLista()` — se você acrescentar campos de lista novos,
   normalize-os também, ou o histórico quebra ao recarregar.
