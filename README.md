@@ -94,6 +94,39 @@ ignorados). A partir daí, em camadas:
 Ninguém entra como presente por semelhança frouxa. Dois registros que apontem para o mesmo
 aluno contam uma vez só; os extras aparecem em **duplicidades**.
 
+## Turmas reunidas
+
+Quando a aula junta duas turmas que o sistema da UNI7 mantém separadas — por exemplo
+Jornalismo e Publicidade em Atividades Práticas —, marque **as duas** ao iniciar a chamada, ou
+use *Vincular turmas* numa chamada antiga.
+
+O app cruza os nomes com as duas listas juntas e depois separa os faltosos por turma, cada bloco
+com seu próprio botão de copiar — que é como a chamada é lançada no sistema. Ninguém precisa
+informar o curso: a turma de cada aluno vem da lista oficial, não do que ele digita.
+
+### Grupos salvos
+
+Em *Turmas → Turmas reunidas → Novo grupo* você salva a combinação com um nome. Ela passa a
+aparecer como um botão único ao iniciar a chamada e ao vincular uma chamada antiga: um clique
+marca todas as turmas do grupo. Ao salvar, o app avisa se houver nomes completos repetidos
+entre as listas, porque esses alunos cairiam sempre na conferência manual.
+
+Vale conferir que a união não cria nomes ambíguos. Nas turmas reunidas de 2026.2 não cria: nenhum
+nome completo se repete entre as listas e nenhum aluno está nas duas.
+
+## Aluno que assiste em outra turma
+
+Em *Turmas → Exceções* você marca, aluno a aluno, a turma onde ele de fato assiste — o caso do
+aluno matriculado à noite que, por acordo com a coordenação, frequenta a turma da manhã.
+
+Efeito: ele sai da conferência da turma de matrícula e passa a ser reconhecido na turma onde
+assiste, sem nunca contar falta na que não frequenta. A presença continua sendo atribuída à
+**turma de matrícula**, porque é lá que a chamada é lançada no sistema da UNI7. Na tela de
+Frequência ele aparece com a marca *outra turma*, e o percentual dele é calculado sobre as
+chamadas da turma que ele assiste.
+
+Reimportar a lista da UNI7 não apaga essas exceções.
+
 ## Frequência acumulada
 
 A aba **Frequência** soma todas as chamadas salvas de uma turma e mostra, por aluno, presenças,
@@ -105,9 +138,9 @@ Só entram no cálculo as chamadas que você **salvou no histórico** na tela de
 
 ## Recuperar aulas antigas
 
-Sessões feitas antes desta versão não têm turma vinculada. No painel, elas aparecem com um
-seletor **"Vincular a uma turma…"**: escolha a turma e o app cruza os registros já gravados com
-a lista oficial, retroativamente.
+Sessões feitas antes desta versão não têm turma vinculada. No painel, elas trazem o botão
+**"Vincular turmas"**: marque uma ou mais turmas e o app cruza os registros já gravados com as
+listas oficiais, retroativamente.
 
 Esses registros antigos guardavam a matrícula do aluno, e a matrícula é chave exata — a
 conciliação deles é mais confiável que a por nome. Depois de vincular, confira e salve no
@@ -137,6 +170,9 @@ A versão atual não pede documento nenhum, então o problema não volta a acont
 - O bloqueio de registro duplicado é por navegador, não por aparelho: quem limpar os dados do
   site ou abrir uma aba anônima consegue registrar de novo. A duplicidade continua sendo pega no
   cruzamento com a lista oficial, que é onde ela importa.
+- O Firebase não guarda listas vazias: uma chamada sem "não identificados" volta do banco sem
+  esse campo. Toda leitura passa por `comoLista()` — se você acrescentar campos de lista novos,
+  normalize-os também, ou o histórico quebra ao recarregar.
 - A senha do professor é verificada no navegador; não protege contra quem inspecionar o código.
   Ela não guarda relação com a chave de sincronização — trocar uma não troca a outra.
 - `cd_att` é público por necessidade: os alunos precisam escrever ali sem autenticação.

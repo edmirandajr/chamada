@@ -228,8 +228,14 @@
       <div style="font-size:14px;font-weight:500;margin-bottom:14px">Nova chamada</div>
 
       <div class="fg">
-        <label>Turma</label>
-        <select id="turmaSel" class="inp" onchange="A.onTurmaChange()"></select>
+        <label>Turmas desta chamada</label>
+        <div id="grupoAtalhos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+        <div id="turmaChecks" class="scroll"
+             style="max-height:180px;border:.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px"></div>
+        <p class="hint" style="margin-top:5px">
+          Marque mais de uma quando a aula reúne turmas diferentes — os faltosos saem separados
+          por turma no fim. Sem marcar nenhuma, o app só coleta os nomes.
+        </p>
       </div>
 
       <div id="livreWrap" style="display:none">
@@ -296,6 +302,14 @@
         <button class="btn" onclick="A.exportBackup()">Exportar backup (.json)</button>
       </div>
       <div id="impPrev" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="sechead" style="margin:0">Turmas reunidas</div>
+        <button class="btn sm blue" onclick="A.novoGrupo()">Novo grupo</button>
+      </div>
+      <div id="glist"></div>
     </div>
 
     <div class="card">
@@ -403,6 +417,80 @@
         <select id="histFiltro" class="inp" onchange="A.renderHist()"></select>
       </div>
       <div id="hlist"><span class="hint">Nenhuma chamada salva ainda.</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GRUPO (TURMAS REUNIDAS) ============ -->
+  <div id="vgrupo" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Turmas reunidas</span>
+      <button class="btn" onclick="A.show('turmas')">← Turmas</button>
+    </div>
+    <div class="card">
+      <p class="hint" style="margin-bottom:12px">
+        Para as disciplinas em que Jornalismo e Publicidade assistem à mesma aula e usam o mesmo
+        QR code. Salvo o conjunto uma vez, ele passa a aparecer como um botão só na hora de
+        iniciar a chamada — sem risco de esquecer uma das turmas.
+      </p>
+      <div class="fg">
+        <label>Nome do grupo</label>
+        <input id="grpNome" class="inp" placeholder="Ex: APIExt II — noite (Jornalismo + Publicidade)">
+      </div>
+      <div class="fg" style="margin-bottom:8px">
+        <label>Turmas que assistem juntas</label>
+        <div id="grpChecks" class="scroll"
+             style="max-height:300px;border:.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px"></div>
+      </div>
+      <div class="err" id="grpErr"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" onclick="A.salvarGrupo()">Salvar grupo</button>
+        <button class="btn" onclick="A.show('turmas')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EXCEÇÕES DE TURMA ============ -->
+  <div id="vexc" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Alunos que assistem em outra turma</span>
+      <button class="btn" onclick="A.show('turmas')">← Turmas</button>
+    </div>
+    <div class="card">
+      <div id="excInfo" style="font-size:13px;font-weight:500;margin-bottom:4px"></div>
+      <p class="hint" style="margin-bottom:12px">
+        Para o aluno que fez acordo com a coordenação e assiste noutro horário: escolha a turma
+        onde ele de fato assiste. Ele sai da conferência desta turma e passa a ser reconhecido na
+        outra — mas a presença continua sendo contada aqui, que é onde ele está matriculado e
+        onde você lança a chamada no sistema.
+      </p>
+      <div id="excLista" class="scroll" style="max-height:420px"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn primary" onclick="A.salvarExcecoes()">Salvar</button>
+        <button class="btn" onclick="A.show('turmas')">Cancelar</button>
+      </div>
+      <div class="hint" id="excMsg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ============ VINCULAR CHAMADA ============ -->
+  <div id="vvinc" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:500">Vincular chamada a turmas</span>
+      <button class="btn" onclick="A.show('dash')">← Painel</button>
+    </div>
+    <div class="card">
+      <div id="vincInfo" class="hint" style="margin-bottom:12px"></div>
+      <div id="vincAtalhos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div id="vincChecks" class="scroll"
+           style="max-height:280px;border:.5px solid var(--border2);border-radius:var(--radius);padding:8px 12px"></div>
+      <p class="hint" style="margin-top:8px">
+        Se a aula reuniu duas turmas, marque as duas: o app cruza os nomes com as listas juntas
+        e separa os faltosos de cada uma. Você não precisa saber o curso de ninguém.
+      </p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn primary" onclick="A.confirmarVinculo()">Vincular e conferir</button>
+        <button class="btn" onclick="A.show('dash')">Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -588,6 +676,7 @@ const STOR_CHAMADAS = 'cd_chamadas_v1';
 const STOR_SYNC     = 'cd_synckey';
 const STOR_DEVID2   = 'cd_devid2';
 const STOR_LIMITE   = 'cd_limite_freq';
+const STOR_GRUPOS   = 'cd_grupos_v1';
 
 const CURSOS_PADRAO = [
   'Publicidade e Propaganda',
@@ -812,7 +901,7 @@ function conciliar(registros, alunos, resolucoes) {
    passa a ser cópia de trabalho: o app funciona sem rede e ressincroniza
    quando ela volta.
    ================================================================ */
-const CACHE = { turmas:[], cursos:null, chamadas:[], carregado:false };
+const CACHE = { turmas:[], cursos:null, chamadas:[], grupos:[], carregado:false };
 
 function getSyncKey() {
   let k = lGet(STOR_SYNC);
@@ -825,37 +914,105 @@ function getSyncKey() {
 function setSyncKey(k) { lSet(STOR_SYNC, String(k).trim().replace(/[^a-z0-9]/gi,'').toLowerCase()); }
 function privPath(sub) { return 'cd_priv/' + getSyncKey() + (sub ? '/' + sub : ''); }
 
-/** Firebase devolve arrays esparsos como objeto; normaliza sempre para lista. */
+/**
+ * Firebase não guarda listas vazias nem chaves com valor nulo: uma chamada sem
+ * "não identificados" volta SEM esse campo, e uma lista pode voltar como objeto
+ * ({"0":…,"1":…}) em vez de array. Toda leitura passa por aqui.
+ */
 function comoLista(v) {
   if (!v) return [];
   return Array.isArray(v) ? v.filter(Boolean) : Object.values(v).filter(Boolean);
+}
+/** Normaliza uma turma vinda do banco — inclusive a lista de alunos. */
+function normTurma(t) {
+  return { ...t, alunos: comoLista(t && t.alunos) };
+}
+/** Normaliza uma chamada salva: todas as listas internas voltam a ser arrays. */
+function normChamada(c) {
+  return { ...c,
+    turmaIds:         comoLista(c.turmaIds),
+    presentes:        comoLista(c.presentes),
+    faltosos:         comoLista(c.faltosos),
+    naoIdentificados: comoLista(c.naoIdentificados),
+    duplicidades:     comoLista(c.duplicidades).map(d => ({ ...d, registros: comoLista(d.registros) })),
+    resolucoes:       c.resolucoes || {}
+  };
 }
 
 function getTurmas()   { return CACHE.turmas; }
 function getTurma(id)  { return CACHE.turmas.find(t => t.id === id) || null; }
 function getCursos()   { return (CACHE.cursos && CACHE.cursos.length) ? CACHE.cursos : CURSOS_PADRAO.slice(); }
 function getChamadas() { return CACHE.chamadas; }
+/** Turmas reunidas: combinações salvas de turmas que assistem juntas. */
+function getGrupos()   { return CACHE.grupos; }
+function normGrupo(g)  { return { ...g, turmaIds: comoLista(g && g.turmaIds) }; }
+
+/** Turmas vinculadas a uma sessão. Sessões antigas guardavam um id só. */
+function turmasDaSessao(sess) {
+  if (!sess) return [];
+  // turmaIds volta do banco como objeto quando as chaves não são contíguas —
+  // sem normalizar, uma chamada de turmas reunidas perderia a segunda turma.
+  const ids = comoLista(sess.turmaIds);
+  return (ids.length ? ids : (sess.turmaId ? [sess.turmaId] : []))
+           .map(getTurma).filter(Boolean);
+}
+/** Idem para uma chamada já salva no histórico. */
+function turmaIdsDaChamada(c) {
+  const ids = comoLista(c.turmaIds);
+  return ids.length ? ids : (c.turmaId ? [c.turmaId] : []);
+}
+/**
+ * União das listas oficiais das turmas de uma chamada.
+ *
+ * Respeita as exceções de frequência: um aluno matriculado na turma A mas que
+ * assiste na turma B (acordo com a coordenação) sai da lista de A e entra na de
+ * B — sempre carregando `turmaId` da turma em que está MATRICULADO, porque é
+ * nela que a presença precisa ser lançada no sistema da UNI7.
+ */
+function alunosDasTurmas(turmas) {
+  const ids = new Set(turmas.map(t => t.id));
+  const vistos = new Set(); const out = [];
+  const juntar = (a, t) => {
+    if (vistos.has(a.id)) return;
+    vistos.add(a.id);
+    out.push({ ...a, turmaId: t.id, turmaNome: t.turma,
+               visitante: !!(a.frequentaTurmaId && a.frequentaTurmaId !== t.id) });
+  };
+  for (const t of turmas) for (const a of t.alunos) {
+    if (a.frequentaTurmaId && a.frequentaTurmaId !== t.id) continue;  // assiste noutra
+    juntar(a, t);
+  }
+  for (const t of getTurmas()) {
+    if (ids.has(t.id)) continue;
+    for (const a of t.alunos) if (a.frequentaTurmaId && ids.has(a.frequentaTurmaId)) juntar(a, t);
+  }
+  return out;
+}
 
 /** Lê do Firebase; se a rede falhar, cai para a cópia local sem travar o app. */
 async function carregarDados() {
   const local = {
-    turmas:   lGet(STOR_TURMAS)   || [],
+    turmas:   comoLista(lGet(STOR_TURMAS)).map(normTurma),
     cursos:   lGet(STOR_CURSOS)   || null,
-    chamadas: lGet(STOR_CHAMADAS) || []
+    chamadas: comoLista(lGet(STOR_CHAMADAS)).map(normChamada),
+    grupos:   comoLista(lGet(STOR_GRUPOS)).map(normGrupo)
   };
   try {
     const remoto = await fbGet(privPath()) || {};
-    CACHE.turmas   = comoLista(remoto.turmas);
+    CACHE.turmas   = comoLista(remoto.turmas).map(normTurma);
     CACHE.cursos   = comoLista(remoto.cursos);
-    CACHE.chamadas = comoLista(remoto.chamadas);
+    CACHE.chamadas = comoLista(remoto.chamadas).map(normChamada);
+    CACHE.grupos   = comoLista(remoto.grupos).map(normGrupo);
     // Primeira sincronização: sobe o que já existia só neste navegador.
     if (!CACHE.turmas.length && local.turmas.length)     await salvarTurmas(local.turmas);
     if (!CACHE.cursos.length && local.cursos)            await salvarCursosLista(local.cursos);
     if (!CACHE.chamadas.length && local.chamadas.length) await salvarChamadas(local.chamadas);
+    if (!CACHE.grupos.length   && local.grupos.length)   await salvarGrupos(local.grupos);
     CACHE.carregado = true;
     return { ok:true };
   } catch(e) {
-    CACHE.turmas = local.turmas; CACHE.cursos = local.cursos; CACHE.chamadas = local.chamadas;
+    CACHE.turmas = local.turmas; CACHE.cursos = local.cursos;
+    CACHE.chamadas = local.chamadas; CACHE.grupos = local.grupos;
     CACHE.carregado = false;
     return { ok:false, erro:e.message };
   }
@@ -868,6 +1025,10 @@ async function salvarTurmas(t) {
 async function salvarCursosLista(c) {
   CACHE.cursos = c; lSet(STOR_CURSOS, c);
   await fbSet(privPath('cursos'), c);
+}
+async function salvarGrupos(g) {
+  CACHE.grupos = g; lSet(STOR_GRUPOS, g);
+  await fbSet(privPath('grupos'), g);
 }
 async function salvarChamadas(ch) {
   CACHE.chamadas = ch; lSet(STOR_CHAMADAS, ch);
@@ -943,7 +1104,10 @@ function parseListaUNI7(texto) {
   // Consolida: id, deduplicação e ids internos de aluno
   const out = [];
   for (const t of turmas) {
-    if (!t.alunos.length) continue;
+    // Turma sem alunos só entra quando veio com cabeçalho próprio (Código + Turma):
+    // é o caso das turmas que existem no sistema mas ainda não têm matriculados.
+    // Sem isso ela seria descartada em silêncio.
+    if (!t.alunos.length && !(t.codigo && t.turma)) continue;
     t.id = (t.codigo && t.turma) ? (t.codigo + '-' + t.turma)
          : ([normNome(t.disciplina).replace(/\s+/g,'-'), t.turma, t.codigo]
               .filter(Boolean).join('-') || ('turma-' + uid()));
@@ -1034,6 +1198,9 @@ const A = {
   _impPrev: null,
   _freq: null,
   _docsAchados: null,
+  _vincSid: null,
+  _excId: null,
+  _grupoId: null,
   _encerrando: false,
 
   /* ---- Inicialização ---- */
@@ -1106,7 +1273,7 @@ const A = {
     document.getElementById('v'+v).classList.add('on');
     if (v === 'dash')     { this.montarTurmaSelect(); this.loadDash(); }
     if (v === 'settings') this._fillSettings();
-    if (v === 'turmas')   this.renderTurmas();
+    if (v === 'turmas')   { this.renderTurmas(); this.renderGrupos(); }
     if (v === 'hist')     { this.montarHistFiltro(); this.renderHist(); }
     if (v === 'freq')     { this.montarFreqSelect(); this.renderFreq(); }
   },
@@ -1203,19 +1370,148 @@ const A = {
   /* ================================================================
      TURMAS
      ================================================================ */
-  montarTurmaSelect() {
-    const sel = document.getElementById('turmaSel');
-    const turmas = getTurmas();
-    sel.innerHTML = turmas.map(t =>
-        `<option value="${esc(t.id)}">${esc(t.disciplina || t.turma)} — ${esc(t.turma)} (${t.alunos.length} alunos)</option>`
-      ).join('') + '<option value="__livre__">— sem turma vinculada (texto livre) —</option>';
-    if (!turmas.length) sel.value = '__livre__';
-    this.onTurmaChange();
+  /* ---- Turmas reunidas (grupos salvos) ---- */
+  _renderAtalhos(containerId, alvoChecks) {
+    const el = document.getElementById(containerId);
+    const gs = getGrupos();
+    if (!gs.length) { el.innerHTML = ''; return; }
+    el.innerHTML = gs.map(g => {
+      const n = g.turmaIds.map(getTurma).filter(Boolean)
+                          .reduce((soma, t) => soma + t.alunos.length, 0);
+      return `<button class="btn sm blue" onclick="A.aplicarGrupo('${escJs(g.id)}','${alvoChecks}')"
+               >${esc(g.nome)} · ${n} alunos</button>`;
+    }).join('') + `<button class="btn sm" onclick="A.limparChecks('${alvoChecks}')">Limpar</button>`;
   },
 
-  onTurmaChange() {
-    const v = document.getElementById('turmaSel').value;
-    document.getElementById('livreWrap').style.display = (v === '__livre__') ? 'block' : 'none';
+  aplicarGrupo(id, containerId) {
+    const g = getGrupos().find(x => x.id === id); if (!g) return;
+    document.querySelectorAll('#' + containerId + ' input[type=checkbox]').forEach(i => {
+      i.checked = g.turmaIds.includes(i.value);
+    });
+    const box = document.getElementById(containerId);
+    if (box.onchange) box.onchange();
+  },
+
+  limparChecks(containerId) {
+    document.querySelectorAll('#' + containerId + ' input[type=checkbox]').forEach(i => i.checked = false);
+    const box = document.getElementById(containerId);
+    if (box.onchange) box.onchange();
+  },
+
+  renderGrupos() {
+    const el = document.getElementById('glist');
+    const gs = getGrupos();
+    if (!gs.length) {
+      el.innerHTML = '<span class="hint">Nenhum grupo. Crie um para as disciplinas em que ' +
+                     'duas turmas assistem à mesma aula — APIExt e TCC, no seu caso.</span>';
+      return;
+    }
+    el.innerHTML = gs.map(g => {
+      const ts = g.turmaIds.map(getTurma).filter(Boolean);
+      const somem = g.turmaIds.length - ts.length;
+      return `<div class="lrow">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500">${esc(g.nome)}</div>
+          <div class="hint">${ts.map(t => esc(t.turma)).join(' + ')} · ${
+            ts.reduce((n, t) => n + t.alunos.length, 0)} alunos${
+            somem ? ` · <span style="color:var(--red-dark)">${somem} turma(s) removida(s) do cadastro</span>` : ''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn sm" onclick="A.novoGrupo('${escJs(g.id)}')">Editar</button>
+          <button class="btn sm danger" onclick="A.removerGrupo('${escJs(g.id)}')">Remover</button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  novoGrupo(id) {
+    const g = id ? getGrupos().find(x => x.id === id) : null;
+    this._grupoId = g ? g.id : null;
+    document.getElementById('grpNome').value = g ? g.nome : '';
+    document.getElementById('grpErr').textContent = '';
+    this._renderChecks('grpChecks', g ? g.turmaIds : []);
+    this.show('grupo');
+  },
+
+  async salvarGrupo() {
+    const nome = document.getElementById('grpNome').value.trim();
+    const ids  = this._marcadas('grpChecks');
+    const err  = document.getElementById('grpErr');
+    if (!nome)         { err.textContent = 'Dê um nome ao grupo.'; return; }
+    if (ids.length < 2) { err.textContent = 'Marque ao menos duas turmas — um grupo de uma turma só não serve para nada.'; return; }
+
+    // Nomes iguais nas duas listas viram ambiguidade na conferência: avisa antes de salvar.
+    const alunos = alunosDasTurmas(ids.map(getTurma).filter(Boolean));
+    const chaves = alunos.map(a => tokensNome(a.nome).join(' '));
+    const repetidos = chaves.filter((c, i) => chaves.indexOf(c) !== i);
+    if (repetidos.length && !confirm(
+        `Atenção: ${repetidos.length} nome(s) completo(s) se repetem entre estas turmas. ` +
+        'Esses alunos vão sempre cair na conferência manual. Salvar mesmo assim?')) return;
+
+    const gs = getGrupos().slice();
+    const reg = { id: this._grupoId || uid(), nome, turmaIds: ids };
+    const i = gs.findIndex(x => x.id === reg.id);
+    if (i >= 0) gs[i] = reg; else gs.push(reg);
+    try { await salvarGrupos(gs); }
+    catch(e) { err.textContent = 'Não gravou: ' + e.message; return; }
+    this.show('turmas');
+  },
+
+  async removerGrupo(id) {
+    const g = getGrupos().find(x => x.id === id); if (!g) return;
+    if (!confirm(`Remover o grupo "${g.nome}"?\nAs turmas e as chamadas já salvas não são afetadas.`)) return;
+    try { await salvarGrupos(getGrupos().filter(x => x.id !== id)); }
+    catch(e) { alert('Não gravou: ' + e.message); return; }
+    this.renderGrupos();
+  },
+
+  _renderChecks(containerId, marcadas) {
+    const el = document.getElementById(containerId);
+    const turmas = getTurmas();
+    if (!turmas.length) { el.innerHTML = '<span class="hint">Nenhuma turma cadastrada.</span>'; return; }
+    el.innerHTML = turmas.map(t => `
+      <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer;font-size:13px">
+        <input type="checkbox" value="${esc(t.id)}" ${marcadas.includes(t.id) ? 'checked' : ''} style="margin-top:3px">
+        <span>${esc(t.disciplina)}<br><span class="hint">${esc(t.turma)} · ${t.alunos.length} alunos</span></span>
+      </label>`).join('');
+  },
+
+  _marcadas(containerId) {
+    return [...document.querySelectorAll('#' + containerId + ' input[type=checkbox]:checked')]
+             .map(i => i.value);
+  },
+
+  /* ---- Vínculo retroativo ---- */
+  async abrirVinculo(sid) {
+    const sess = await fbGet('cd_sessions/' + sid);
+    if (!sess) { alert('Sessão não encontrada.'); return; }
+    this._vincSid = sid;
+    document.getElementById('vincInfo').innerHTML =
+      `<strong>${esc(sess.course)}</strong> — ${esc(sess.group || '')} · ${fmt(sess.createdAt)}`;
+    this._renderChecks('vincChecks', turmasDaSessao(sess).map(t => t.id));
+    this._renderAtalhos('vincAtalhos', 'vincChecks');
+    this.show('vinc');
+  },
+
+  async confirmarVinculo() {
+    const ids = this._marcadas('vincChecks');
+    if (!ids.length) { alert('Marque ao menos uma turma.'); return; }
+    const total = ids.map(getTurma).filter(Boolean).reduce((n, t) => n + t.alunos.length, 0);
+    if (!confirm(`Vincular esta chamada a ${ids.length} turma(s), somando ${total} alunos na lista oficial?`)) return;
+    try { await fbUpdate('cd_sessions/' + this._vincSid, { turmaIds: ids, turmaId: ids[0] }); }
+    catch(e) { alert('Não consegui gravar o vínculo: ' + e.message); return; }
+    await this.abrirConferencia(this._vincSid);
+  },
+
+  montarTurmaSelect() {
+    this._renderChecks('turmaChecks', []);
+    this._renderAtalhos('grupoAtalhos', 'turmaChecks');
+    document.getElementById('livreWrap').style.display = getTurmas().length ? 'none' : 'block';
+    const box = document.getElementById('turmaChecks');
+    box.onchange = () => {
+      document.getElementById('livreWrap').style.display =
+        this._marcadas('turmaChecks').length ? 'none' : 'block';
+    };
   },
 
   renderTurmas() {
@@ -1230,6 +1526,9 @@ const A = {
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button class="btn sm" onclick="A.verTurma('${escJs(t.id)}')">Ver</button>
+          <button class="btn sm" onclick="A.abrirExcecoes('${escJs(t.id)}')">Exceções${
+            t.alunos.filter(a => a.frequentaTurmaId).length
+              ? ' (' + t.alunos.filter(a => a.frequentaTurmaId).length + ')' : ''}</button>
           <button class="btn sm danger" onclick="A.removerTurma('${escJs(t.id)}')">Remover</button>
         </div>
       </div>`).join('');
@@ -1249,6 +1548,49 @@ const A = {
     salvarTurmas(getTurmas().filter(x => x.id !== id))
       .then(() => this.renderTurmas())
       .catch(e => alert('Removida só neste navegador — o banco não respondeu: ' + e.message));
+  },
+
+  abrirExcecoes(id) {
+    const t = getTurma(id); if (!t) return;
+    this._excId = id;
+    document.getElementById('excInfo').textContent = t.disciplina + ' — ' + t.turma;
+    const outras = getTurmas().filter(x => x.id !== id);
+    document.getElementById('excLista').innerHTML = t.alunos.map(a => `
+      <div class="lrow">
+        <div style="flex:1;min-width:0">
+          <div>${esc(a.nome)}</div>
+          <div class="hint">${esc(a.matricula || '')}</div>
+        </div>
+        <select class="inp" data-aluno="${esc(a.id)}"
+                style="width:auto;max-width:260px;font-size:12px;padding:5px 8px">
+          <option value="">assiste nesta turma</option>
+          ${outras.map(x => `<option value="${esc(x.id)}" ${a.frequentaTurmaId === x.id ? 'selected' : ''}
+             >${esc(x.disciplina)} — ${esc(x.turma)}</option>`).join('')}
+        </select>
+      </div>`).join('');
+    document.getElementById('excMsg').textContent = '';
+    this.show('exc');
+  },
+
+  async salvarExcecoes() {
+    const t = getTurma(this._excId); if (!t) return;
+    const escolhas = {};
+    document.querySelectorAll('#excLista select').forEach(sel => {
+      escolhas[sel.getAttribute('data-aluno')] = sel.value || null;
+    });
+    const turmas = getTurmas().map(x => x.id !== t.id ? x : ({ ...x,
+      alunos: x.alunos.map(a => {
+        const v = escolhas[a.id];
+        const novo = { ...a };
+        if (v) novo.frequentaTurmaId = v; else delete novo.frequentaTurmaId;
+        return novo;
+      })
+    }));
+    try { await salvarTurmas(turmas); }
+    catch(e) { document.getElementById('excMsg').textContent = 'Não gravou: ' + e.message; return; }
+    const n = Object.values(escolhas).filter(Boolean).length;
+    document.getElementById('excMsg').textContent =
+      n ? `${n} exceção(ões) salva(s).` : 'Nenhuma exceção — todos assistem nesta turma.';
   },
 
   previewImport() {
@@ -1274,7 +1616,9 @@ const A = {
         return `<div class="lrow">
           <div>
             <div style="font-weight:500">${esc(t.disciplina || '(sem disciplina)')} ${jaTem?'<span class="badge badge-amber">substitui existente</span>':'<span class="badge badge-green">nova</span>'}</div>
-            <div class="hint">${esc(t.turma || '—')}${t.codigo?' · '+esc(t.codigo):''} · <strong>${t.alunos.length} alunos</strong>${semMat?` · ${semMat} sem matrícula`:''}</div>
+            <div class="hint">${esc(t.turma || '—')}${t.codigo?' · '+esc(t.codigo):''} · <strong>${
+              t.alunos.length ? t.alunos.length + ' alunos' : 'sem alunos matriculados'}</strong>${
+              semMat?` · ${semMat} sem matrícula`:''}</div>
             <div class="hint" style="margin-top:3px">${esc(t.alunos.slice(0,3).map(a=>a.nome).join(' · '))}${t.alunos.length>3?' …':''}</div>
           </div>
         </div>`;
@@ -1286,7 +1630,17 @@ const A = {
     const novas = this._impPrev;
     if (!novas || !novas.length) return;
     const mapa = new Map(getTurmas().map(t => [t.id, t]));
-    for (const t of novas) mapa.set(t.id, t);
+    for (const t of novas) {
+      // Preserva as exceções de frequência já configuradas nesta turma.
+      const antiga = mapa.get(t.id);
+      if (antiga) {
+        const exc = new Map(antiga.alunos.filter(a => a.frequentaTurmaId)
+                                         .map(a => [a.id, a.frequentaTurmaId]));
+        if (exc.size) t.alunos = t.alunos.map(a =>
+          exc.has(a.id) ? { ...a, frequentaTurmaId: exc.get(a.id) } : a);
+      }
+      mapa.set(t.id, t);
+    }
     try { await salvarTurmas([...mapa.values()]); }
     catch(e) { alert('Não foi possível gravar no banco: ' + e.message); return; }
     document.getElementById('impTxt').value = '';
@@ -1299,7 +1653,7 @@ const A = {
   exportBackup() {
     const dados = { versao:1, exportadoEm:new Date().toISOString(),
                     chave:getSyncKey(),
-                    turmas:getTurmas(), cursos:getCursos(), chamadas:getChamadas() };
+                    turmas:getTurmas(), cursos:getCursos(), grupos:getGrupos(), chamadas:getChamadas() };
     const blob = new Blob([JSON.stringify(dados, null, 1)], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1317,12 +1671,13 @@ const A = {
         if (!d.turmas) throw new Error('arquivo sem o campo "turmas"');
         if (!confirm(`Importar ${d.turmas.length} turma(s) e ${(d.chamadas||[]).length} chamada(s) do backup?\nTurmas com o mesmo código serão substituídas.`)) return;
         const mapa = new Map(getTurmas().map(t => [t.id, t]));
-        for (const t of d.turmas) mapa.set(t.id, t);
+        for (const t of comoLista(d.turmas)) mapa.set(t.id, normTurma(t));
         await salvarTurmas([...mapa.values()]);
         if (d.cursos && d.cursos.length) await salvarCursosLista(d.cursos);
+        if (d.grupos && d.grupos.length) await salvarGrupos(comoLista(d.grupos).map(normGrupo));
         if (d.chamadas && d.chamadas.length) {
           const ch = new Map(getChamadas().map(c => [c.sid, c]));
-          for (const c of d.chamadas) ch.set(c.sid, c);
+          for (const c of comoLista(d.chamadas)) ch.set(c.sid, normChamada(c));
           await salvarChamadas([...ch.values()]);
         }
         this.montarCursos();
@@ -1366,7 +1721,7 @@ const A = {
       } else {
         badge = `<span class="badge badge-gray">${s.autoExp?'Expirada':'Encerrada'}</span>`;
       }
-      const temTurma = s.turmaId && getTurma(s.turmaId);
+      const temTurma = turmasDaSessao(s).length > 0;
       html += `
         <div style="display:flex;align-items:flex-start;justify-content:space-between;
                     gap:10px;padding:10px 0;border-bottom:.5px solid var(--border)">
@@ -1379,13 +1734,10 @@ const A = {
           <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
             ${s.active?`<button class="btn sm" onclick="A.reopenProj('${s.id}')">Projetar</button>`:''}
             ${temTurma
-              ? `<button class="btn sm blue" onclick="A.abrirConferencia('${s.id}')">Conferir</button>`
+              ? `<button class="btn sm blue" onclick="A.abrirConferencia('${s.id}')">Conferir</button>
+                 <button class="btn sm" onclick="A.abrirVinculo('${s.id}')">Turmas</button>`
               : (getTurmas().length
-                  ? `<select class="inp" style="width:auto;max-width:190px;font-size:12px;padding:4px 8px"
-                             onchange="A.vincularTurma('${s.id}', this.value)">
-                       <option value="">Vincular a uma turma…</option>
-                       ${getTurmas().map(t => `<option value="${escJs(t.id)}">${esc(t.disciplina)} — ${esc(t.turma)}</option>`).join('')}
-                     </select>` : '')}
+                  ? `<button class="btn sm blue" onclick="A.abrirVinculo('${s.id}')">Vincular turmas</button>` : '')}
             <button class="btn sm" onclick="A.viewAtt('${s.id}')">Ver</button>
             <button class="btn sm" onclick="A.exportCSV('${s.id}')">CSV</button>
           </div>
@@ -1396,14 +1748,14 @@ const A = {
 
   /* ---- Criar sessão ---- */
   async createSession() {
-    const turmaId = document.getElementById('turmaSel').value;
-    let course, group, vincTurma = null;
+    const ids = this._marcadas('turmaChecks');
+    let course, group;
 
-    if (turmaId && turmaId !== '__livre__') {
-      vincTurma = getTurma(turmaId);
-      if (!vincTurma) { document.getElementById('serr').textContent = 'Turma não encontrada.'; return; }
-      course = vincTurma.disciplina || vincTurma.turma;
-      group  = vincTurma.turma;
+    if (ids.length) {
+      const ts = ids.map(getTurma).filter(Boolean);
+      if (!ts.length) { document.getElementById('serr').textContent = 'Turma não encontrada.'; return; }
+      course = [...new Set(ts.map(t => t.disciplina || t.turma))].join(' / ');
+      group  = ts.map(t => t.turma).join(' + ');
     } else {
       course = document.getElementById('course').value.trim();
       group  = document.getElementById('group').value.trim();
@@ -1417,7 +1769,7 @@ const A = {
     const now       = Date.now();
     const expiresAt = now + durMin * 60000;
     const sess = { id, course, group, secret:sec, createdAt:now, expiresAt, durMin, active:true,
-                   turmaId: vincTurma ? vincTurma.id : '' };
+                   turmaIds: ids, turmaId: ids[0] || '' };
     await fbSet('cd_sessions/' + id, sess);
     this.activeId = id;
     this.show('proj');
@@ -1448,7 +1800,7 @@ const A = {
     this.activeId = null; this._lastToken = ''; this._encerrando = false;
 
     const sess = await fbGet('cd_sessions/' + sid);
-    if (sess && sess.turmaId && getTurma(sess.turmaId)) {
+    if (sess && turmasDaSessao(sess).length) {
       await this.abrirConferencia(sid);
       if (auto) alert('A sessão expirou automaticamente. Confira e salve a chamada.');
     } else {
@@ -1474,10 +1826,10 @@ const A = {
     this._attListener = db.ref('cd_att/' + this.activeId)
       .on('value', snap => {
         const att = snap.val() ? Object.values(snap.val()) : [];
-        const turma = sess.turmaId ? getTurma(sess.turmaId) : null;
+        const oficiais = alunosDasTurmas(turmasDaSessao(sess));
         document.getElementById('acnt').textContent = att.length;
         document.getElementById('acntlbl').textContent =
-          turma ? 'de ' + turma.alunos.length + ' alunos' : 'registro(s)';
+          oficiais.length ? 'de ' + oficiais.length + ' alunos' : 'registro(s)';
         document.getElementById('alist').innerHTML = att.slice().reverse().map(r =>
           `<div class="att-row"><span style="font-weight:500">${esc(r.nome)}</span>` +
           `${r.curso ? '<br><span style="color:var(--text3)">'+esc(r.curso)+'</span>' :
@@ -1597,12 +1949,13 @@ const A = {
   async abrirConferencia(sid) {
     const sess  = await fbGet('cd_sessions/' + sid);
     if (!sess) { alert('Sessão não encontrada.'); return; }
-    const turma = sess.turmaId ? getTurma(sess.turmaId) : null;
-    if (!turma) { alert('Esta sessão não está vinculada a nenhuma turma cadastrada.'); return; }
+    const turmas = turmasDaSessao(sess);
+    if (!turmas.length) { alert('Esta chamada ainda não está vinculada a nenhuma turma.'); return; }
+    const oficiais = alunosDasTurmas(turmas);
 
     const salva = getChamadas().find(c => c.sid === sid);
     this._conf = {
-      sess, turma,
+      sess, turmas, oficiais,
       registros: await this._lerRegistros(sid),
       resolucoes: (salva && salva.resolucoes) || {},
       salva: !!salva
@@ -1614,7 +1967,7 @@ const A = {
 
   _calcular() {
     const c = this._conf;
-    c.resultado = conciliar(c.registros, c.turma.alunos, c.resolucoes);
+    c.resultado = conciliar(c.registros, c.oficiais, c.resolucoes);
     return c.resultado;
   },
 
@@ -1622,11 +1975,13 @@ const A = {
     const c = this._conf; if (!c) return;
     const r = this._calcular();
 
-    document.getElementById('cfTitle').textContent = c.turma.disciplina + ' — ' + c.turma.turma;
+    document.getElementById('cfTitle').textContent =
+      c.turmas.map(t => t.disciplina + ' — ' + t.turma).join('  +  ');
     document.getElementById('cfSub').textContent =
       fmtData(c.sess.createdAt) + ' · ' + fmtHora(c.sess.createdAt) +
       (c.sess.endedAt ? ' às ' + fmtHora(c.sess.endedAt) : '') +
-      ' · ' + c.turma.alunos.length + ' alunos na lista oficial' +
+      ' · ' + c.oficiais.length + ' alunos na lista oficial' +
+      (c.turmas.length > 1 ? ' (' + c.turmas.map(t => t.turma + ': ' + t.alunos.length).join(', ') + ')' : '') +
       (c.salva ? ' · já salva no histórico' : '');
 
     const abas = [
@@ -1643,7 +1998,8 @@ const A = {
     const pend = r.naoIdentificados.filter(p => !c.resolucoes[p.key]);
     const box  = document.getElementById('cfPend');
     if (pend.length) {
-      const opts = c.turma.alunos.map(a => `<option value="${esc(a.id)}">${esc(a.nome)}</option>`).join('');
+      const opts = c.oficiais.map(a => `<option value="${esc(a.id)}">${esc(a.nome)}${
+        c.turmas.length > 1 ? ' (' + esc(a.turmaNome) + ')' : ''}</option>`).join('');
       box.innerHTML = `
         <div class="sechead" style="color:var(--amber-dark)">Precisam da sua decisão — ${pend.length}</div>
         ${pend.map(p => {
@@ -1704,12 +2060,15 @@ const A = {
     const el = document.getElementById('cfList');
 
     if (this._confAba === 'presentes') {
-      t.textContent = 'Presentes — ' + r.presentes.length;
+      t.textContent = 'Presentes — ' + r.presentes.length +
+        (c.turmas.length > 1 ? ' (' + c.turmas.map(tu =>
+          tu.turma + ': ' + r.presentes.filter(p => p.aluno.turmaId === tu.id).length).join(', ') + ')' : '');
       el.innerHTML = r.presentes.length ? r.presentes.map(p => `
         <div class="lrow">
           <div>
             <div>${esc(p.aluno.nome)}</div>
-            <div class="hint">${esc(p.registro.curso||'—')} · ${fmtHora(p.registro.ts)} · digitou "${esc(p.registro.nome)}"</div>
+            <div class="hint">${c.turmas.length > 1 ? esc(p.aluno.turmaNome) + ' · ' : ''}${
+              esc(p.registro.curso||'—')} · ${fmtHora(p.registro.ts)} · digitou "${esc(p.registro.nome)}"</div>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             ${p.modo==='exato'?'':`<span class="badge ${p.modo==='manual'?'badge-blue':'badge-amber'}">${p.modo==='manual'?'manual':'aproximado'}</span>`}
@@ -1719,11 +2078,35 @@ const A = {
 
     } else if (this._confAba === 'faltosos') {
       t.textContent = 'Faltosos — ' + r.faltosos.length;
-      el.innerHTML = r.faltosos.length ? r.faltosos.map(a => `
-        <div class="lrow">
-          <div>${esc(a.nome)}</div>
-          <span class="mono">${esc(a.matricula||'')}</span>
-        </div>`).join('') : '<span class="hint">Ninguém faltou.</span>';
+      if (!r.faltosos.length) { el.innerHTML = '<span class="hint">Ninguém faltou.</span>'; }
+      else if (c.turmas.length === 1) {
+        el.innerHTML = r.faltosos.map(a => `
+          <div class="lrow">
+            <div>${esc(a.nome)}</div>
+            <span class="mono">${esc(a.matricula||'')}</span>
+          </div>`).join('');
+      } else {
+        // Turmas reunidas: cada turma vira um bloco com cópia própria,
+        // porque no sistema da UNI7 a chamada é lançada turma a turma.
+        el.innerHTML = c.turmas.map(tu => {
+          const f = r.faltosos.filter(a => a.turmaId === tu.id);
+          return `
+            <div style="margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+                          padding-bottom:6px;border-bottom:.5px solid var(--border2)">
+                <div>
+                  <div style="font-size:13px;font-weight:500">${esc(tu.disciplina)} — ${esc(tu.turma)}</div>
+                  <div class="hint">${f.length} de ${tu.alunos.length} faltaram</div>
+                </div>
+                <button class="btn sm danger" onclick="A.copiarFaltososTurma('${escJs(tu.id)}')">Copiar</button>
+              </div>
+              ${f.length ? f.map(a => `
+                <div class="lrow"><div>${esc(a.nome)}</div>
+                  <span class="mono">${esc(a.matricula||'')}</span></div>`).join('')
+                : '<div class="hint" style="padding:8px 0">Ninguém faltou nesta turma.</div>'}
+            </div>`;
+        }).join('');
+      }
 
     } else if (this._confAba === 'naoid') {
       t.textContent = 'Não identificados — ' + r.naoIdentificados.length;
@@ -1760,8 +2143,22 @@ const A = {
   },
 
   _txtFaltosos() {
-    const r = this._conf && this._conf.resultado;
-    return r ? r.faltosos.map(a => a.nome).join('\n') : '';
+    const c = this._conf; if (!c || !c.resultado) return '';
+    const r = c.resultado;
+    if (c.turmas.length === 1) return r.faltosos.map(a => a.nome).join('\n');
+    return c.turmas.map(tu => {
+      const f = r.faltosos.filter(a => a.turmaId === tu.id);
+      return `${tu.disciplina} — ${tu.turma} (${f.length} faltoso(s))\n` +
+             (f.length ? f.map(a => a.nome).join('\n') : '—');
+    }).join('\n\n');
+  },
+
+  copiarFaltososTurma(turmaId) {
+    const c = this._conf; if (!c || !c.resultado) return;
+    const tu = c.turmas.find(x => x.id === turmaId);
+    const f = c.resultado.faltosos.filter(a => a.turmaId === turmaId);
+    if (!f.length) { document.getElementById('cfMsg').textContent = 'Ninguém faltou nesta turma.'; return; }
+    this._copiar(f.map(a => a.nome).join('\n'), `${f.length} faltoso(s) de ${tu.turma}`);
   },
   _txtPresentes() {
     const r = this._conf && this._conf.resultado;
@@ -1791,28 +2188,30 @@ const A = {
     const r = c.resultado;
     const q = s => '"' + String(s==null?'':s).replace(/"/g,'""') + '"';
     const linhas = [];
-    linhas.push('Situação;Nome oficial;Matrícula;Nome digitado;Curso informado;Horário;Observação');
+    linhas.push('Situação;Turma;Nome oficial;Matrícula;Nome digitado;Curso informado;Horário;Observação');
     for (const p of r.presentes)
-      linhas.push(['PRESENTE',q(p.aluno.nome),p.aluno.matricula||'',q(p.registro.nome),q(p.registro.curso),
+      linhas.push(['PRESENTE',q(p.aluno.turmaNome||''),q(p.aluno.nome),p.aluno.matricula||'',
+                   q(p.registro.nome),q(p.registro.curso),
                    q(fmtHora(p.registro.ts)), p.modo==='exato'?'':q('casamento '+p.modo)].join(';'));
     for (const a of r.faltosos)
-      linhas.push(['FALTOSO',q(a.nome),a.matricula||'','','','',''].join(';'));
+      linhas.push(['FALTOSO',q(a.turmaNome||''),q(a.nome),a.matricula||'','','','',''].join(';'));
     for (const p of r.naoIdentificados)
-      linhas.push(['NÃO IDENTIFICADO','','',q(p.nome),q(p.curso),q(fmtHora(p.ts)),
+      linhas.push(['NÃO IDENTIFICADO','','','',q(p.nome),q(p.curso),q(fmtHora(p.ts)),
                    q(p.tipo==='ambiguo'?'corresponde a mais de um aluno':'sem correspondência')].join(';'));
     for (const d of r.duplicidades)
       for (const x of d.registros.slice(1))
-        linhas.push(['DUPLICIDADE',q(d.aluno.nome),d.aluno.matricula||'',q(x.nome),q(x.curso),
-                     q(fmtHora(x.ts)),q('registro extra')].join(';'));
+        linhas.push(['DUPLICIDADE',q(d.aluno.turmaNome||''),q(d.aluno.nome),d.aluno.matricula||'',
+                     q(x.nome),q(x.curso),q(fmtHora(x.ts)),q('registro extra')].join(';'));
 
-    const cab = `Disciplina;${q(c.turma.disciplina)}\nTurma;${q(c.turma.turma)}\n` +
+    const cab = c.turmas.map(t => `Disciplina;${q(t.disciplina)}\nTurma;${q(t.turma)};${
+                  q(r.faltosos.filter(a=>a.turmaId===t.id).length + ' faltoso(s)')}\n`).join('') +
                 `Data;${q(fmtData(c.sess.createdAt))}\nHorário;${q(fmtHora(c.sess.createdAt))}\n` +
                 `Presentes;${r.presentes.length}\nFaltosos;${r.faltosos.length}\n` +
                 `Não identificados;${r.naoIdentificados.length}\nDuplicidades;${r.duplicidades.length}\n\n`;
     const blob = new Blob(['\uFEFF' + cab + linhas.join('\n')], { type:'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'chamada_' + (c.turma.turma||'turma') + '_' +
+    a.download = 'chamada_' + (c.turmas.map(t=>t.turma).join('-')||'turma') + '_' +
                  new Date(c.sess.createdAt).toISOString().slice(0,10) + '.csv';
     a.click();
   },
@@ -1821,15 +2220,17 @@ const A = {
     const c = this._conf; if (!c) return;
     const r = c.resultado;
     const reg = {
-      sid: c.sess.id, turmaId: c.turma.id,
-      turma: c.turma.turma, disciplina: c.turma.disciplina,
+      sid: c.sess.id,
+      turmaIds: c.turmas.map(t => t.id), turmaId: c.turmas[0].id,
+      turma: c.turmas.map(t => t.turma).join(' + '),
+      disciplina: [...new Set(c.turmas.map(t => t.disciplina))].join(' / '),
       data: c.sess.createdAt, inicio: c.sess.createdAt, fim: c.sess.endedAt || null,
-      totalOficial: c.turma.alunos.length,
+      totalOficial: c.oficiais.length,
       resolucoes: c.resolucoes,
       presentes: r.presentes.map(p => ({ id:p.aluno.id, nome:p.aluno.nome, matricula:p.aluno.matricula,
-                                         modo:p.modo, digitado:p.registro.nome,
+                                         turmaId:p.aluno.turmaId, modo:p.modo, digitado:p.registro.nome,
                                          curso:p.registro.curso, ts:p.registro.ts })),
-      faltosos: r.faltosos.map(a => ({ id:a.id, nome:a.nome, matricula:a.matricula })),
+      faltosos: r.faltosos.map(a => ({ id:a.id, nome:a.nome, matricula:a.matricula, turmaId:a.turmaId })),
       naoIdentificados: r.naoIdentificados.map(p => ({ nome:p.nome, curso:p.curso, ts:p.ts, tipo:p.tipo })),
       duplicidades: r.duplicidades.map(d => ({ nome:d.aluno.nome, matricula:d.aluno.matricula,
                                                registros:d.registros.map(x => ({nome:x.nome, ts:x.ts})) })),
@@ -1851,10 +2252,10 @@ const A = {
   montarHistFiltro() {
     const sel = document.getElementById('histFiltro');
     const ch = getChamadas();
-    const ids = [...new Set(ch.map(c => c.turmaId))];
+    const ids = [...new Set(ch.flatMap(turmaIdsDaChamada))];
     sel.innerHTML = '<option value="">Todas as turmas</option>' + ids.map(id => {
-      const c = ch.find(x => x.turmaId === id);
-      return `<option value="${esc(id)}">${esc(c.disciplina)} — ${esc(c.turma)}</option>`;
+      const t = getTurma(id);
+      return `<option value="${esc(id)}">${esc(t ? t.disciplina + ' — ' + t.turma : id)}</option>`;
     }).join('');
   },
 
@@ -1862,7 +2263,7 @@ const A = {
     const el = document.getElementById('hlist');
     const filtro = document.getElementById('histFiltro').value;
     let ch = getChamadas().slice().sort((a,b) => b.data - a.data);
-    if (filtro) ch = ch.filter(c => c.turmaId === filtro);
+    if (filtro) ch = ch.filter(c => turmaIdsDaChamada(c).includes(filtro));
     if (!ch.length) { el.innerHTML = '<span class="hint">Nenhuma chamada salva ainda.</span>'; return; }
     el.innerHTML = ch.map(c => `
       <div class="lrow" style="align-items:flex-start">
@@ -1870,10 +2271,10 @@ const A = {
           <div style="font-weight:500">${esc(c.disciplina)} — ${esc(c.turma)}</div>
           <div class="hint">${fmtData(c.data)} · ${fmtHora(c.inicio)}${c.fim?' às '+fmtHora(c.fim):''}</div>
           <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">
-            <span class="badge badge-green">${c.presentes.length} presentes</span>
-            <span class="badge badge-red">${c.faltosos.length} faltosos</span>
-            ${c.naoIdentificados.length?`<span class="badge badge-amber">${c.naoIdentificados.length} não ident.</span>`:''}
-            ${c.duplicidades.length?`<span class="badge badge-gray">${c.duplicidades.length} dupl.</span>`:''}
+            <span class="badge badge-green">${comoLista(c.presentes).length} presentes</span>
+            <span class="badge badge-red">${comoLista(c.faltosos).length} faltosos</span>
+            ${comoLista(c.naoIdentificados).length?`<span class="badge badge-amber">${comoLista(c.naoIdentificados).length} não ident.</span>`:''}
+            ${comoLista(c.duplicidades).length?`<span class="badge badge-gray">${comoLista(c.duplicidades).length} dupl.</span>`:''}
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
@@ -1886,9 +2287,16 @@ const A = {
   copiarFaltososHist(sid) {
     const c = getChamadas().find(x => x.sid === sid);
     if (!c) return;
-    const txt = c.faltosos.map(a => a.nome).join('\n');
+    const ids = turmaIdsDaChamada(c);
+    const faltosos = comoLista(c.faltosos);
+    const txt = ids.length > 1
+      ? ids.map(id => { const t = getTurma(id);
+          const f = faltosos.filter(a => a.turmaId === id);
+          return `${t ? t.disciplina + ' — ' + t.turma : id} (${f.length})\n` +
+                 (f.length ? f.map(a => a.nome).join('\n') : '—'); }).join('\n\n')
+      : faltosos.map(a => a.nome).join('\n');
     navigator.clipboard.writeText(txt)
-      .then(() => alert(c.faltosos.length + ' faltoso(s) copiado(s).'))
+      .then(() => alert(faltosos.length + ' faltoso(s) copiado(s).'))
       .catch(() => prompt('Copie manualmente:', txt));
   },
 
@@ -2006,24 +2414,25 @@ const A = {
   _apurarFrequencia(turmaId) {
     const turma = getTurma(turmaId);
     if (!turma) return null;
-    const chamadas = getChamadas().filter(c => c.turmaId === turmaId)
-                                  .sort((a, b) => a.data - b.data);
-    const linhas = turma.alunos.map(a => ({
-      aluno: a, presencas: 0, faltas: 0, datasFalta: []
-    }));
-    const porId = new Map(linhas.map(l => [l.aluno.id, l]));
+    const todas = getChamadas().slice().sort((a, b) => a.data - b.data);
+    const chamadas = todas.filter(c => turmaIdsDaChamada(c).includes(turmaId));
 
-    for (const ch of chamadas) {
-      const presentes = new Set((ch.presentes || []).map(p => p.id));
-      for (const l of linhas) {
-        if (presentes.has(l.aluno.id)) l.presencas++;
+    // Cada aluno é apurado nas chamadas da turma onde ele de fato assiste.
+    const linhas = turma.alunos.map(a => {
+      const efetiva = a.frequentaTurmaId || turmaId;
+      const minhas = todas.filter(c => turmaIdsDaChamada(c).includes(efetiva));
+      const l = { aluno: a, presencas: 0, faltas: 0, datasFalta: [], total: minhas.length,
+                  visitante: !!(a.frequentaTurmaId && a.frequentaTurmaId !== turmaId) };
+      for (const ch of minhas) {
+        if (new Set(comoLista(ch.presentes).map(p => p.id)).has(a.id)) l.presencas++;
         else { l.faltas++; l.datasFalta.push(ch.data); }
       }
-    }
-    const total = chamadas.length;
-    for (const l of linhas) l.pct = total ? (l.presencas / total) * 100 : null;
-    linhas.sort((x, y) => (x.pct === null ? 0 : x.pct - y.pct) || x.aluno.nome.localeCompare(y.aluno.nome, 'pt-BR'));
-    return { turma, chamadas, total, linhas };
+      l.pct = l.total ? (l.presencas / l.total) * 100 : null;
+      return l;
+    });
+    linhas.sort((x, y) => (x.pct === null ? 1 : y.pct === null ? -1 : x.pct - y.pct)
+                          || x.aluno.nome.localeCompare(y.aluno.nome, 'pt-BR'));
+    return { turma, chamadas, total: chamadas.length, linhas };
   },
 
   montarFreqSelect() {
@@ -2059,14 +2468,15 @@ const A = {
     }
 
     const lim = this._limiteFreq();
-    const abaixo = f.linhas.filter(l => l.pct < lim);
+    const abaixo = f.linhas.filter(l => l.pct !== null && l.pct < lim);
     const datas  = f.chamadas.map(c => fmtData(c.data));
     resumo.innerHTML = `
       <div class="kpis">
         <div class="kpi"><div class="kpi-n">${f.total}</div><div class="kpi-l">Chamadas</div></div>
         <div class="kpi"><div class="kpi-n">${f.turma.alunos.length}</div><div class="kpi-l">Alunos</div></div>
         <div class="kpi"><div class="kpi-n" style="color:var(--red-dark)">${abaixo.length}</div><div class="kpi-l">Abaixo de ${lim}%</div></div>
-        <div class="kpi"><div class="kpi-n">${(f.linhas.reduce((s,l)=>s+l.pct,0)/f.linhas.length).toFixed(0)}%</div><div class="kpi-l">Média da turma</div></div>
+        <div class="kpi"><div class="kpi-n">${(() => { const v=f.linhas.filter(l=>l.pct!==null);
+          return v.length ? (v.reduce((s,l)=>s+l.pct,0)/v.length).toFixed(0) : 0; })()}%</div><div class="kpi-l">Média da turma</div></div>
       </div>
       <p class="hint" style="margin-top:10px">Chamadas consideradas: ${esc(datas.join(' · '))}</p>`;
 
@@ -2074,16 +2484,18 @@ const A = {
       `${f.turma.disciplina} — ${f.turma.turma} · ${f.linhas.length} alunos`;
 
     lista.innerHTML = f.linhas.map(l => {
-      const critico = l.pct < lim;
-      const cor = critico ? 'var(--red-dark)' : (l.pct < lim + 10 ? 'var(--amber-dark)' : 'var(--green-dark)');
+      const critico = l.pct !== null && l.pct < lim;
+      const cor = critico ? 'var(--red-dark)' : (l.pct !== null && l.pct < lim + 10 ? 'var(--amber-dark)' : 'var(--green-dark)');
       return `<div class="lrow">
         <div style="flex:1;min-width:0">
-          <div>${esc(l.aluno.nome)} ${critico ? '<span class="badge badge-red">abaixo do limite</span>' : ''}</div>
-          <div class="hint">${l.presencas} presença(s) · ${l.faltas} falta(s)${
+          <div>${esc(l.aluno.nome)} ${critico ? '<span class="badge badge-red">abaixo do limite</span>' : ''}${
+            l.visitante ? ' <span class="badge badge-blue">outra turma</span>' : ''}</div>
+          <div class="hint">${l.presencas} de ${l.total} chamada(s)${
+            l.visitante ? ' · assiste em ' + esc((getTurma(l.aluno.frequentaTurmaId)||{}).turma || '—') : ''}${
             l.datasFalta.length ? ' · faltou em ' + esc(l.datasFalta.map(fmtData).join(', ')) : ''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-weight:500;color:${cor}">${l.pct.toFixed(0)}%</div>
+          <div style="font-weight:500;color:${cor}">${l.pct === null ? '—' : l.pct.toFixed(0)+'%'}</div>
           <div class="mono">${esc(l.aluno.matricula||'')}</div>
         </div>
       </div>`;
@@ -2094,7 +2506,7 @@ const A = {
     const f = this._freq, msg = document.getElementById('freqMsg');
     if (!f || !f.total) { msg.textContent = 'Nada para copiar.'; return; }
     const lim = this._limiteFreq();
-    const abaixo = f.linhas.filter(l => l.pct < lim);
+    const abaixo = f.linhas.filter(l => l.pct !== null && l.pct < lim);
     if (!abaixo.length) { msg.textContent = `Ninguém está abaixo de ${lim}%.`; return; }
     const txt = abaixo.map(l => `${l.aluno.nome} — ${l.pct.toFixed(0)}% (${l.faltas} falta(s))`).join('\n');
     navigator.clipboard.writeText(txt)
@@ -2110,9 +2522,9 @@ const A = {
     const cab = ['Aluno','Matrícula','Presenças','Faltas','Frequência (%)', ...datas].map(q).join(';');
     const linhas = f.linhas.map(l => {
       const marcas = f.chamadas.map(ch =>
-        (ch.presentes || []).some(p => p.id === l.aluno.id) ? 'P' : 'F');
+        comoLista(ch.presentes).some(p => p.id === l.aluno.id) ? 'P' : 'F');
       return [q(l.aluno.nome), q(l.aluno.matricula||''), l.presencas, l.faltas,
-              l.pct.toFixed(0), ...marcas.map(q)].join(';');
+              l.pct === null ? '' : l.pct.toFixed(0), ...marcas.map(q)].join(';');
     });
     const topo = `${q(f.turma.disciplina)}\n${q(f.turma.turma)}\n${q('Chamadas: '+f.total)}\n\n`;
     const blob = new Blob(['\uFEFF' + topo + cab + '\n' + linhas.join('\n')],
